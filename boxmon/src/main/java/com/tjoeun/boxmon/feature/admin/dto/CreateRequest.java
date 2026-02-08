@@ -1,0 +1,19 @@
+package com.tjoeun.boxmon.feature.admin.dto;
+
+public class CreateRequest {
+    private String loginId;
+    private String password;
+    private String name;
+
+    public String getLoginId() {
+        return loginId;
+    }
+
+    public CharSequence getPassword() {
+        return password;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
