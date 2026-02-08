@@ -1,17 +1,10 @@
 package com.tjoeun.boxmon.feature.admin.domain;
 
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import org.springframework.data.annotation.Id;
+import jakarta.persistence.*;
 
 @Entity
 public class Admin {
 
-    @jakarta.persistence.Id
-    private Long id;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long adminId;

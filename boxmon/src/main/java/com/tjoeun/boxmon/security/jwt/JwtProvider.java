@@ -12,9 +12,17 @@ import java.util.Date;
 // 토근 생성, 검증, 사용자 식별 정보 추출 담당
 @Component
 public class JwtProvider {
-    private final String SECRET_KEY = System.getenv("JWT_SECRET"); //JWT비밀키 ... 환경변수로 지정하여 사용
+    private final String SECRET_KEY;
     private final long ACCESS_TOKEN_EXPIRE_TIME = 1000L * 60 * 15; //Access Token 만료시간 (15분)
     private final long REFRESH_TOKEN_EXPIRE_TIME = 1000L * 60 * 60 * 24 * 14; // Refresh Token 만료시간 (14일)
+
+    public JwtProvider() {
+        String secretKey = System.getenv("JWT_SECRET");
+        if (secretKey == null || secretKey.isEmpty()) {
+            throw new IllegalStateException("JWT_SECRET 환경변수가 설정되지 않았습니다");
+        }
+        this.SECRET_KEY = secretKey;
+    }
 
 
     // 공통 키 생성
@@ -24,36 +32,37 @@ public class JwtProvider {
         );
     }
 
-    //Access Token 생성
-    public String createAccessToken(Long userId){
+    private String createToken(Long userId, String type, long expireTime) {
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))//userId 데이터 전달
-                .claim("type", "ACCESS")
+                .claim("type", type)
                 .setIssuedAt(new Date())//token 발급시간
-                .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRE_TIME))//token 만료시간
+                .setExpiration(new Date(System.currentTimeMillis() + expireTime))//token 만료시간
                 .signWith(getSigningKey(),SignatureAlgorithm.HS256)//해시함수 비밀키 ... RS256도 있음
                 .compact();//JWT문자열
     }
 
-    //Refresh Token 생성
-    public String createRefreshToken(Long userId){
-        return Jwts.builder()
-                .setSubject(String.valueOf(userId))//userId 데이터 전달
-                .claim("type", "REFRESH")
-                .setIssuedAt(new Date())//token 발급시간
-                .setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRE_TIME))//token 만료시간
-                .signWith(getSigningKey(),SignatureAlgorithm.HS256)//해시함수 비밀키 ... RS256도 있음
-                .compact();
+    //Access Token 생성
+    public String createAccessToken(Long userId){
+        return createToken(userId, "ACCESS", ACCESS_TOKEN_EXPIRE_TIME);
     }
 
-    // 토큰 타입 확인
-    public String getTokenType(String token) {
-        Claims claims = Jwts.parser()
+    //Refresh Token 생성
+    public String createRefreshToken(Long userId){
+        return createToken(userId, "REFRESH", REFRESH_TOKEN_EXPIRE_TIME);
+    }
+
+    private Claims parseToken(String token) {
+        return Jwts.parser()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
                 .getBody();
+    }
 
+    // 토큰 타입 확인
+    public String getTokenType(String token) {
+        Claims claims = parseToken(token);
         return claims.get("type", String.class);
     }
 
@@ -61,12 +70,7 @@ public class JwtProvider {
     //userId 추출 (토큰파싱)
     //서명, 만료 검증
     public Long getUserIdFromToken(String token){
-        Claims claims = Jwts.parser()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getBody();
-
+        Claims claims = parseToken(token);
         return Long.valueOf(claims.getSubject());
     }
 

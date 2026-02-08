@@ -3,6 +3,8 @@ package com.tjoeun.boxmon.feature.user.controller;
 import com.tjoeun.boxmon.feature.user.dto.LoginRequest;
 import com.tjoeun.boxmon.feature.user.dto.LoginResponse;
 import com.tjoeun.boxmon.feature.user.dto.SignupRequest;
+import com.tjoeun.boxmon.feature.user.dto.TokenRefreshRequest;
+import com.tjoeun.boxmon.feature.user.dto.TokenRefreshResponse;
 import com.tjoeun.boxmon.feature.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -18,19 +20,25 @@ public class UserController {
         this.userService = userService;
     }
 
-    //회원가입
+    // 회원가입
     @PostMapping("/signup")
     public void signup(@RequestBody @Valid SignupRequest request){
         userService.signup(request);
     }
 
-    //로그인
+    // 로그인
     @PostMapping("/login")
     public LoginResponse login(@RequestBody @Valid LoginRequest request){
         return userService.login(request);
     }
 
-    //토근테스트
+    // Access Token 갱신
+    @PostMapping("/refresh")
+    public TokenRefreshResponse refreshToken(@RequestBody @Valid TokenRefreshRequest request) {
+        return userService.refreshToken(request);
+    }
+
+    // 토근테스트
     @GetMapping("/test")
     public String test(Authentication authentication) {
         return "인증 성공 userId = " + authentication.getPrincipal();

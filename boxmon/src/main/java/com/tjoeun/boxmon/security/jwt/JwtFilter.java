@@ -26,9 +26,6 @@ public class JwtFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        System.out.println("🔥 JwtFilter 실행됨");
-        System.out.println("Authorization = " + request.getHeader("Authorization"));
-
         // Authorization 헤더에서 토큰 꺼내기
         String authHeader = request.getHeader("Authorization");
 
@@ -44,6 +41,13 @@ public class JwtFilter extends OncePerRequestFilter {
         // 토큰 검증
         if (!jwtProvider.validateToken(token)) {
             filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Refresh Token으로 API 접근 차단
+        String tokenType = jwtProvider.getTokenType(token);
+        if ("REFRESH".equals(tokenType)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
 

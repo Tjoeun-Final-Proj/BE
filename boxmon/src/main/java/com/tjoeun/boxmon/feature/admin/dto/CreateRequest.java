@@ -9,7 +9,7 @@ public class CreateRequest {
         return loginId;
     }
 
-    public CharSequence getPassword() {
+    public String getPassword() {
         return password;
     }
 
