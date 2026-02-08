@@ -1,11 +1,11 @@
 package com.tjoeun.boxmon.feature.user.dto;
 
-public class LoginResponse {
+public class TokenRefreshResponse {
 
     private String accessToken;
     private String refreshToken;
 
-    public LoginResponse(String accessToken, String refreshToken){
+    public TokenRefreshResponse(String accessToken, String refreshToken) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
     }
