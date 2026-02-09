@@ -1,6 +1,7 @@
 package com.tjoeun.boxmon.feature.admin.service;
 
-import com.tjoeun.boxmon.exception.BusinessException;
+
+import com.tjoeun.boxmon.exception.DuplicateAdminException;
 import com.tjoeun.boxmon.feature.admin.domain.Admin;
 import com.tjoeun.boxmon.feature.admin.dto.CreateRequest;
 import com.tjoeun.boxmon.feature.admin.repository.AdminRepository;

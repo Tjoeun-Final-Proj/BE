@@ -38,7 +38,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.security:spring-security-crypto:5.7.1")
+    implementation("org.springframework.security:spring-security-crypto")
     implementation ("org.springframework.boot:spring-boot-starter-security")
 }
 
