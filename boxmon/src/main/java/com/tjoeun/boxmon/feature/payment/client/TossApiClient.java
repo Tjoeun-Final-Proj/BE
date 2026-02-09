@@ -1,4 +1,4 @@
-package com.tjoeun.boxmon.feature.payment;
+package com.tjoeun.boxmon.feature.payment.client;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
