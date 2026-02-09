@@ -41,14 +41,19 @@ public class PaymentController {
 
     // 결제 수단(빌링키) 등록 엔드포인트
     @PostMapping("/billingkey")
-    public ResponseEntity<PaymentMethod> registerBillingKey(
+    public ResponseEntity<String> registerBillingKey(
             @AuthenticationPrincipal Long shipperId, // 이렇게 바로 받을 수 있습니다.
             @RequestBody AuthKeyRequest authKeyRequest
     ) {
         if (shipperId == null) {
             throw new IllegalStateException("인증된 사용자 정보를 찾을 수 없습니다.");
         }
-        PaymentMethod paymentMethod = paymentService.registerBillingKey(shipperId, authKeyRequest.getAuthKey());
-        return new ResponseEntity<>(paymentMethod, HttpStatus.CREATED);
+        try {
+            paymentService.registerBillingKey(shipperId, authKeyRequest.getAuthKey());
+            return ResponseEntity.status(HttpStatus.CREATED).body("결제수단이 성공적으로 등록되었습니다.");
+        }
+        catch (IllegalArgumentException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("잘못된 인증키입니다.");
+        }
     }
 }

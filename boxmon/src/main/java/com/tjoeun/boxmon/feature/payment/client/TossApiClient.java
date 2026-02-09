@@ -23,9 +23,11 @@ public class TossApiClient {
                 .build();
     }
 
-    public Map requestBillingKey(String customerKey, String authKey){
-        //TODO:map 인코딩된 데이터 dto로 교체
-        Map<String, String> data = Map.of("customerKey", customerKey, "authKey", authKey);
+    public String requestBillingKey(String customerKey, String authKey){
+        Map<String, String> data = Map.of(
+                "customerKey", customerKey, 
+                "authKey", authKey
+        );
         
         Map result = client.post()
                 .uri("/v1/billing/authorizations/issue")
@@ -34,6 +36,14 @@ public class TossApiClient {
                 .body(data)
                 .retrieve()
                 .body(Map.class);
-        return result;
+        
+        try {
+            String billingKey = result.get("billingKey").toString();
+            return billingKey;
+        }
+        catch(NullPointerException e){
+            e.printStackTrace();
+            throw new IllegalArgumentException("빌링키 발급 실패");
+        }
     }
 }
