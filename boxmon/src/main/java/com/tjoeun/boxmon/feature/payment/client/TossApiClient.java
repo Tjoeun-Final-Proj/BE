@@ -38,12 +38,11 @@ public class TossApiClient {
                 .body(Map.class);
         
         try {
-            String billingKey = result.get("billingKey").toString();
-            return billingKey;
+            return result.get("billingKey").toString();
         }
         catch(NullPointerException e){
             e.printStackTrace();
-            throw new IllegalArgumentException("빌링키 발급 실패");
+            throw new IllegalArgumentException("잘못된 인증키입니다.");
         }
     }
 }

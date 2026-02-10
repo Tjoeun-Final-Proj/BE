@@ -53,7 +53,7 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.CREATED).body("결제수단이 성공적으로 등록되었습니다.");
         }
         catch (IllegalArgumentException e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("잘못된 인증키입니다.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 }
