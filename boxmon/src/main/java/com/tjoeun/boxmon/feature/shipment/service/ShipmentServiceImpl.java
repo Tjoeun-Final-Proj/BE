@@ -9,6 +9,10 @@ import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.locationtech.jts.geom.Coordinate; // 추가
+import org.locationtech.jts.geom.GeometryFactory; // 추가
+import org.locationtech.jts.geom.Point; // 추가 (엔티티의 타입과 일치)
+import org.locationtech.jts.geom.PrecisionModel; // 추가
 
 @Service
 @RequiredArgsConstructor
@@ -18,34 +22,39 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final ShipmentRepository shipmentRepository;
     private final ShipperRepository shipperRepository;
 
+    // GPS 표준 좌표계(WGS84)인 SRID 4326을 사용하는 Factory 생성
+    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+
     @Override
     public void createShipment(Long shipperId, ShipmentCreateRequest request) {
         // 1. 화주 조회
         Shipper shipper = shipperRepository.findById(shipperId)
                 .orElseThrow(() -> new UserNotFoundException("화주를 찾을 수 없습니다."));
 
-        // 2. Shipment 엔티티 생성 및 매핑
-        // ShipmentStatus는 Enum으로 변경하는 것이 좋지만, 일단 String으로 사용
-        // TODO: ShipmentStatus를 Enum으로 변경 고려
-        String shipmentStatus = "REQUESTED"; // 초기 상태
+        // 2. 좌표 변환 (DTO의 Point -> JTS Point)
+        Point pickupPoint = convertToJtsPoint(request.getPickupPoint());
+        Point dropoffPoint = convertToJtsPoint(request.getDropoffPoint());
+        Point waypoint1Point = convertToJtsPoint(request.getWaypoint1Point());
+        Point waypoint2Point = convertToJtsPoint(request.getWaypoint2Point());
 
-        // platformFee와 profit 계산
-        // TODO: 수수료 정책에 따라 정확한 계산 로직 구현 필요
+        // 3. 비용 및 상태 설정
+        String shipmentStatus = "REQUESTED";
         Integer price = request.getPrice();
-        Integer platformFee = (int) (price * 0.1); // 10% 수수료
+        Integer platformFee = (int) (price * 0.1);
         Integer profit = price - platformFee;
 
+        // 4. Shipment 엔티티 생성
         Shipment shipment = Shipment.builder()
                 .shipper(shipper)
-                .pickupPoint(request.getPickupPoint())
+                .pickupPoint(pickupPoint) // 변환된 JTS Point 사용
                 .pickupAddress(request.getPickupAddress())
                 .pickupDesiredAt(request.getPickupDesiredAt())
-                .dropoffPoint(request.getDropoffPoint())
+                .dropoffPoint(dropoffPoint) // 변환된 JTS Point 사용
                 .dropoffAddress(request.getDropoffAddress())
                 .dropoffDesiredAt(request.getDropoffDesiredAt())
-                .waypoint1Point(request.getWaypoint1Point())
+                .waypoint1Point(waypoint1Point)
                 .waypoint1Address(request.getWaypoint1Address())
-                .waypoint2Point(request.getWaypoint2Point())
+                .waypoint2Point(waypoint2Point)
                 .waypoint2Address(request.getWaypoint2Address())
                 .price(price)
                 .platformFee(platformFee)
@@ -58,10 +67,19 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .description(request.getDescription())
                 .cargoPhotoUrl(request.getCargoPhotoUrl())
                 .shipmentStatus(shipmentStatus)
-                // shipperCancelToggle, driverCancelToggle은 @Builder.Default로 설정됨
                 .build();
 
-        // 3. Shipment 저장
+        // 5. 저장
         shipmentRepository.save(shipment);
+    }
+
+    /**
+     * org.springframework.data.geo.Point를 org.locationtech.jts.geom.Point로 변환
+     */
+    // DTO에 담긴 x, y 좌표를 자동으로 JTS 전용 바이너리 객체로 변환해주는 메소드. 
+    private Point convertToJtsPoint(org.springframework.data.geo.Point source) {
+        if (source == null) return null;
+        // JTS는 기본적으로 x=경도(longitude), y=위도(latitude) 순서를 따릅니다.
+        return geometryFactory.createPoint(new Coordinate(source.getX(), source.getY()));
     }
 }
