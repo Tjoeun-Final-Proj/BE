@@ -28,9 +28,8 @@ public class PaymentService {
         Shipper shipper = shipperRepository.findById(shipperId)
                 .orElseThrow(() -> new UserNotFoundException("ID가 " + shipperId + "인 화주(Shipper)를 찾을 수 없습니다."));
 
-        // 2. authKey를 사용하여 billingKey를 받아오는 로직 (현재는 Mocking)
-        // 이 부분은 나중에 실제 Toss Payments API를 호출하는 getKey 메서드로 대체되어야 합니다.
-        String billingKey = tossApiClient.requestBillingKey(shipperId.toString(), authKey); // 임시 메서드 호출
+        // 2. authKey를 사용하여 billingKey를 받아오는 로직
+        String billingKey = tossApiClient.requestBillingKey(shipperId.toString(), authKey);
         
 
         // 3. PaymentMethod 엔티티 생성 및 저장
