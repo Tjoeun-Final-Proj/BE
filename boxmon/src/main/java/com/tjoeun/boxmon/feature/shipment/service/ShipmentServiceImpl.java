@@ -40,7 +40,7 @@ public class ShipmentServiceImpl implements ShipmentService {
         // 3. 비용 및 상태 설정
         String shipmentStatus = "REQUESTED";
         Integer price = request.getPrice();
-        Integer platformFee = (int) (price * 0.1);
+        Integer platformFee = (int) (price * 0.1); ///TODO: 수수료율 하드 코딩 -> 추후 system_setting 테이블 생성 후 여기서 수수료율 전역으로 관리 예정
         Integer profit = price - platformFee;
 
         // 4. Shipment 엔티티 생성
@@ -76,7 +76,7 @@ public class ShipmentServiceImpl implements ShipmentService {
     /**
      * org.springframework.data.geo.Point를 org.locationtech.jts.geom.Point로 변환
      */
-    // DTO에 담긴 x, y 좌표를 자동으로 JTS 전용 바이너리 객체로 변환해주는 메소드. 
+    // DTO에 담긴 x, y 좌표를 자동으로 JTS 전용 바이너리 객체로 변환해주는 메소드.
     private Point convertToJtsPoint(org.springframework.data.geo.Point source) {
         if (source == null) return null;
         // JTS는 기본적으로 x=경도(longitude), y=위도(latitude) 순서를 따릅니다.
