@@ -2,6 +2,7 @@ package com.tjoeun.boxmon.feature.user.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -38,6 +39,7 @@ public class User {
     private String businessNumber;
 
     @Column(nullable = false)
+    @Setter
     private String deviceToken;
 
     @Enumerated(EnumType.STRING)
@@ -49,7 +51,7 @@ public class User {
     }
 
     //회원가입 형식
-    public User(String email, String password, String name, String phone, LocalDate birth, Boolean isPushEnabled, UserType userType, String businessNumber){
+    public User(String email, String password, String name, String phone, LocalDate birth, Boolean isPushEnabled, UserType userType, String businessNumber, String deviceToken){
         this.email = email;
         this.password = password;
         this.name = name;
@@ -59,6 +61,7 @@ public class User {
         this.isPushEnabled = isPushEnabled;
         this.userType = userType;
         this.businessNumber = businessNumber;
+        this.deviceToken = deviceToken;
     }
 
 }

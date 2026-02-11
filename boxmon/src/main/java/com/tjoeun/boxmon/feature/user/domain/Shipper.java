@@ -9,11 +9,12 @@ import lombok.Getter;
 public class Shipper {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="shipper_id")
     private Long shipperId;
 
+    @MapsId
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "shipper_id", nullable = false)
     private User user;
 
     protected Shipper() {}

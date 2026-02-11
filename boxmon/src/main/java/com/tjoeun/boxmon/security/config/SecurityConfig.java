@@ -33,8 +33,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/user/login", 
-                                "/api/user/signup", 
-                                "/api/user/refresh", 
+                                "/api/user/shipperSignup",
+                                "/api/user/DriverSignup",
+                                "/api/user/refresh",
+                                "/api/admin/LoginAdmin",
+                                "/api/admin/create",
                                 //for swagger-ui
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
