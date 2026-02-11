@@ -34,7 +34,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/user/login", 
                                 "/api/user/shipperSignup",
-                                "/api/user/DriverSignup",
+                                "/api/user/driverSignup",
                                 "/api/user/refresh",
                                 "/api/admin/LoginAdmin",
                                 "/api/admin/create",

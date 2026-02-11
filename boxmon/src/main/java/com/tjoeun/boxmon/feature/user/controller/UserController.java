@@ -1,5 +1,6 @@
 package com.tjoeun.boxmon.feature.user.controller;
 
+import com.tjoeun.boxmon.exception.UserNotFoundException;
 import com.tjoeun.boxmon.feature.user.dto.*;
 import com.tjoeun.boxmon.feature.user.service.UserService;
 import com.tjoeun.boxmon.security.jwt.RefreshTokenService;
@@ -37,7 +38,7 @@ public class UserController {
 
     // 로그인
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request){
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request){
         LoginResponse response = userService.login(request);
         return ResponseEntity.ok(response);
     }
@@ -56,10 +57,10 @@ public class UserController {
     }
 
     // 회원 정보 수정
-//    @PutMapping("/Modify")
-//    public ResponseEntity<Void> userModify(@AuthenticationPrincipal Long userId, @RequestBody @Valid UserModify request){
-//        userService.UserModify(userId, request);
-//        return ResponseEntity.ok().build();
-//    }
+    @PostMapping("/modify")
+    public ResponseEntity<Void> userModify(@AuthenticationPrincipal Long userId, @RequestBody @Valid UserModify request){
+        userService.UserModify(userId, request);
+        return ResponseEntity.ok().build();
+    }
 
 }

@@ -36,15 +36,6 @@ public class DriverSignupRequest {
     private String businessNumber;
 
     @NotNull
-    private String bankCode;
-
-    @NotNull
-    private String accountNumber;
-
-    @NotNull
-    private String holderName;
-
-    @NotNull
     private String certNumber;
 
 }

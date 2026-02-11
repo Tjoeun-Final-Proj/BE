@@ -81,10 +81,7 @@ public class UserService {
 
         Driver driver = new Driver(
                 user,
-                request.getBankCode(),
-                request.getAccountNumber(),
-                request.getCertNumber(),
-                request.getHolderName()
+                request.getCertNumber()
                 );
         driverRepository.save(driver);
     }
@@ -113,19 +110,36 @@ public class UserService {
         return new LoginResponse(accessToken, refreshToken, userType);
     }
 
-    //회원 정보 수정
-//    public void UserModify(Long userId, UserModify request) {
-//        User user = userRepository.findByUserId(userId);
-//
-//    }
+    // 회원 정보 수정
+    public void UserModify(Long userId, UserModify request) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
+        user.setName(request.getName());
+        user.setPhone(request.getPhone());
+        user.setBusinessNumber(request.getBusinessNumber());
+        user.setIsPushEnabled(request.getIsPushEnabled());
+
+        userRepository.save(user);
+    }
+
+    //차주 계좌 정보 입력
+    public void AccountModify(Long userId, UserModify request) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
+        user.setName(request.getName());
+        user.setPhone(request.getPhone());
+        user.setBusinessNumber(request.getBusinessNumber());
+        user.setIsPushEnabled(request.getIsPushEnabled());
+
+        userRepository.save(user);
+    }
+
+
     /*
-     @Transactional
-    public Member updateMember(Long id, Member memberDetails) {
-        Member member = memberRepository.findById(id).orElseThrow(()
-        -> new RuntimeException("Member not found"));
-        member.setName(memberDetails.getName());
-        // 필요한 경우 다른 속성들도 업데이트
-        return memberRepository.save(member);
+            this.bankCode = bankCode;
+        this.accountNumber = accountNumber;
+        this.certNumber = certNumber;
+        this.holderName = holderName;
     }
      */
 

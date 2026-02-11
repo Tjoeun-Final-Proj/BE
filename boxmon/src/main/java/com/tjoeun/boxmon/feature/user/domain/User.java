@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Setter
 public class User {
 
     @Id
@@ -39,7 +40,6 @@ public class User {
     private String businessNumber;
 
     @Column(nullable = false)
-    @Setter
     private String deviceToken;
 
     @Enumerated(EnumType.STRING)
