@@ -1,7 +1,9 @@
 package com.tjoeun.boxmon.feature.user.domain;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 @Entity
+@Getter
 public class Driver {
 
     @Id
@@ -12,29 +14,26 @@ public class Driver {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Status status;
+    private String bankCode;
+
+    @Column(nullable = false)
+    private String accountNumber;
+
+    @Column(nullable = false)
+    private String certNumber;
+
+    @Column(nullable = false)
+    private String holderName;
 
     protected Driver() {}
 
-    public Driver(User user) {
+    public Driver(User user, String bankCode, String accountNumber, String certNumber, String holderName) {
         this.user = user;
-        this.status = Status.PENDING;
-    }
-    public Status getApprovalStatus() {
-        return status;
-    }
-
-    public void approve() {
-        this.status = Status.APPROVED;
+        this.bankCode = bankCode;
+        this.accountNumber = accountNumber;
+        this.certNumber = certNumber;
+        this.holderName = holderName;
     }
 
-    public void reject() {
-        this.status = Status.REJECT;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
 }

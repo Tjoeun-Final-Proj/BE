@@ -1,16 +1,14 @@
-package com.tjoeun.boxmon.feature.user.dto;
+package com.tjoeun.boxmon.feature.admin.dto;
 
 import lombok.Getter;
 
 @Getter
-public class TokenRefreshResponse {
-
+public class AdminLogin {
     private String accessToken;
     private String refreshToken;
 
-    public TokenRefreshResponse(String accessToken, String refreshToken) {
+    public AdminLogin(String accessToken, String refreshToken){
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
     }
-
 }
