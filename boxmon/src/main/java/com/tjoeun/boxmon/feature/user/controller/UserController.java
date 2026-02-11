@@ -4,7 +4,9 @@ import com.tjoeun.boxmon.feature.user.dto.*;
 import com.tjoeun.boxmon.feature.user.service.UserService;
 import com.tjoeun.boxmon.security.jwt.RefreshTokenService;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,34 +23,43 @@ public class UserController {
 
     // 화주 회원가입
     @PostMapping("/shipperSignup")
-    public void shipperSignup(@RequestBody @Valid ShipperSignupRequest request){
+    public ResponseEntity<Void> shipperSignup(@RequestBody @Valid ShipperSignupRequest request){
         userService.shipperSignup(request);
+        return ResponseEntity.ok().build();
     }
 
     // 차주 회원가입
     @PostMapping("/driverSignup")
-    public void driverSignup(@RequestBody @Valid DriverSignupRequest request){
+    public ResponseEntity<Void> driverSignup(@RequestBody @Valid DriverSignupRequest request){
         userService.driverSignup(request);
+        return ResponseEntity.ok().build();
     }
 
     // 로그인
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody @Valid LoginRequest request){
-        return userService.login(request);
+    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request){
+        LoginResponse response = userService.login(request);
+        return ResponseEntity.ok(response);
     }
 
     // Access Token 갱신
     @PostMapping("/refresh")
-    public TokenRefreshResponse refreshToken(@RequestBody @Valid TokenRefreshRequest request) {
-        return refreshTokenService.refreshToken(request);
+    public ResponseEntity<TokenRefreshResponse> refreshToken(@RequestBody @Valid TokenRefreshRequest request) {
+        TokenRefreshResponse response = refreshTokenService.refreshToken(request);
+        return ResponseEntity.ok(response);
     }
 
     // 토근테스트
     @GetMapping("/test")
-    public String test(Authentication authentication) {
-        return "인증 성공 userId = " + authentication.getPrincipal();
+    public String test(@AuthenticationPrincipal Long principal) {
+        return "인증 성공 userId = " +principal;
     }
 
-
+    // 회원 정보 수정
+//    @PutMapping("/Modify")
+//    public ResponseEntity<Void> userModify(@AuthenticationPrincipal Long userId, @RequestBody @Valid UserModify request){
+//        userService.UserModify(userId, request);
+//        return ResponseEntity.ok().build();
+//    }
 
 }

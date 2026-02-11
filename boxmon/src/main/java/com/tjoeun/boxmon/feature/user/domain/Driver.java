@@ -7,11 +7,12 @@ import lombok.Getter;
 public class Driver {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="driver_id")
     private Long driverId;
 
+    @MapsId
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "driver_id", nullable = false)
     private User user;
 
     @Column(nullable = false)

@@ -48,7 +48,9 @@ public class UserService {
                 request.getBirth(),
                 request.getIsPushEnabled(),
                 request.getUserType(),
-                request.getBusinessNumber()
+                request.getBusinessNumber(),
+                ""
+
         );
         user = userRepository.save(user);
         Shipper shipper = new Shipper(user);
@@ -72,7 +74,8 @@ public class UserService {
                 request.getBirth(),
                 request.getIsPushEnabled(),
                 request.getUserType(),
-                request.getBusinessNumber()
+                request.getBusinessNumber(),
+                ""
         );
         user = userRepository.save(user);
 
@@ -96,6 +99,9 @@ public class UserService {
             throw new InvalidPasswordException("비밀번호 불일치");
         }
 
+        user.setDeviceToken(request.getDeviceToken());
+        userRepository.save(user);
+
         // Access Token 생성 (15분 만료)
         String accessToken = jwtProvider.createAccessToken(user.getUserId());
         
@@ -108,9 +114,20 @@ public class UserService {
     }
 
     //회원 정보 수정
-    public void UserModify(UserModify request){
-        
+//    public void UserModify(Long userId, UserModify request) {
+//        User user = userRepository.findByUserId(userId);
+//
+//    }
+    /*
+     @Transactional
+    public Member updateMember(Long id, Member memberDetails) {
+        Member member = memberRepository.findById(id).orElseThrow(()
+        -> new RuntimeException("Member not found"));
+        member.setName(memberDetails.getName());
+        // 필요한 경우 다른 속성들도 업데이트
+        return memberRepository.save(member);
     }
+     */
 
 
 }
