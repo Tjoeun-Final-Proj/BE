@@ -1,7 +1,9 @@
 package com.tjoeun.boxmon.feature.admin.domain;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
+@Getter
 @Entity
 public class Admin {
 
@@ -27,4 +29,6 @@ public class Admin {
         this.password = password;
         this.name = name;
     }
+
+
 }

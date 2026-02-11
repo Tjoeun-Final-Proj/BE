@@ -1,11 +1,8 @@
 package com.tjoeun.boxmon.feature.user.controller;
 
-import com.tjoeun.boxmon.feature.user.dto.LoginRequest;
-import com.tjoeun.boxmon.feature.user.dto.LoginResponse;
-import com.tjoeun.boxmon.feature.user.dto.SignupRequest;
-import com.tjoeun.boxmon.feature.user.dto.TokenRefreshRequest;
-import com.tjoeun.boxmon.feature.user.dto.TokenRefreshResponse;
+import com.tjoeun.boxmon.feature.user.dto.*;
 import com.tjoeun.boxmon.feature.user.service.UserService;
+import com.tjoeun.boxmon.security.jwt.RefreshTokenService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -15,15 +12,23 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final RefreshTokenService refreshTokenService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, RefreshTokenService refreshTokenService) {
         this.userService = userService;
+        this.refreshTokenService = refreshTokenService;
     }
 
-    // 회원가입
-    @PostMapping("/signup")
-    public void signup(@RequestBody @Valid SignupRequest request){
-        userService.signup(request);
+    // 화주 회원가입
+    @PostMapping("/shipperSignup")
+    public void shipperSignup(@RequestBody @Valid ShipperSignupRequest request){
+        userService.shipperSignup(request);
+    }
+
+    // 차주 회원가입
+    @PostMapping("/driverSignup")
+    public void driverSignup(@RequestBody @Valid DriverSignupRequest request){
+        userService.driverSignup(request);
     }
 
     // 로그인
@@ -35,7 +40,7 @@ public class UserController {
     // Access Token 갱신
     @PostMapping("/refresh")
     public TokenRefreshResponse refreshToken(@RequestBody @Valid TokenRefreshRequest request) {
-        return userService.refreshToken(request);
+        return refreshTokenService.refreshToken(request);
     }
 
     // 토근테스트
