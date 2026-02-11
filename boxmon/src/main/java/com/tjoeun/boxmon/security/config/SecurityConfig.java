@@ -31,9 +31,6 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-<<<<<<< Updated upstream
-                        .requestMatchers("/api/user/login", "/api/user/signup", "/api/user/refresh").permitAll()
-=======
                         .requestMatchers(
                                 "/api/user/login", 
                                 "/api/user/shipperSignup",
@@ -45,7 +42,6 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
->>>>>>> Stashed changes
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
