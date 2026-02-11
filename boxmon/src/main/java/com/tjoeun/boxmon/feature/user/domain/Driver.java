@@ -1,5 +1,6 @@
 package com.tjoeun.boxmon.feature.user.domain;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 @Entity
@@ -15,26 +16,22 @@ public class Driver {
     @JoinColumn(name = "driver_id", nullable = false)
     private User user;
 
-    @Column(nullable = false)
     private String bankCode;
 
-    @Column(nullable = false)
     private String accountNumber;
 
     @Column(nullable = false)
     private String certNumber;
 
-    @Column(nullable = false)
+    @Column(name="holder_name")
     private String holderName;
 
     protected Driver() {}
 
-    public Driver(User user, String bankCode, String accountNumber, String certNumber, String holderName) {
+    public Driver(User user, String certNumber) {
         this.user = user;
-        this.bankCode = bankCode;
-        this.accountNumber = accountNumber;
         this.certNumber = certNumber;
-        this.holderName = holderName;
     }
+
 
 }
