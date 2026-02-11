@@ -27,6 +27,7 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
+    implementation("org.hibernate.orm:hibernate-spatial") // MySQL의 공간 데이터를 처리할 수 있도록 Hibernate Spatial 라이브러리
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
     runtimeOnly("com.mysql:mysql-connector-j")
@@ -38,7 +39,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.security:spring-security-crypto:5.7.1")
+    implementation("org.springframework.security:spring-security-crypto")
     implementation ("org.springframework.boot:spring-boot-starter-security")
 }
 
