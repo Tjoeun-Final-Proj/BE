@@ -3,7 +3,7 @@ package com.tjoeun.boxmon.feature.shipment.domain;
 import com.tjoeun.boxmon.feature.user.domain.Driver;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
 import jakarta.persistence.*;
-        import lombok.*;
+import lombok.*;
 import org.locationtech.jts.geom.Point;
 
 import java.time.LocalDateTime;
@@ -127,4 +127,14 @@ public class Shipment {
 
     @Column(columnDefinition = "POINT SRID 4326")
     private Point waypoint2Point;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt; // 화물 등록 시간
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }
+
+    
