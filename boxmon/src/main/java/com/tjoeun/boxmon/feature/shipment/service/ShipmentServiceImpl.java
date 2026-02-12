@@ -14,6 +14,8 @@ import org.locationtech.jts.geom.GeometryFactory; // 추가
 import org.locationtech.jts.geom.Point; // 추가 (엔티티의 타입과 일치)
 import org.locationtech.jts.geom.PrecisionModel; // 추가
 
+import java.math.BigDecimal;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -39,9 +41,9 @@ public class ShipmentServiceImpl implements ShipmentService {
 
         // 3. 비용 및 상태 설정
         String shipmentStatus = "REQUESTED";
-        Integer price = request.getPrice();
-        Integer platformFee = (int) (price * 0.1); ///TODO: 수수료율 하드 코딩 -> 추후 system_setting 테이블 생성 후 여기서 수수료율 전역으로 관리 예정
-        Integer profit = price - platformFee;
+        BigDecimal price = BigDecimal.valueOf(request.getPrice());
+        BigDecimal platformFee = price.multiply(BigDecimal.valueOf(0.1)); ///TODO: 수수료율 하드 코딩 -> 추후 system_setting 테이블 생성 후 여기서 수수료율 전역으로 관리 예정
+        BigDecimal profit = price.subtract(platformFee);
 
         // 4. Shipment 엔티티 생성
         Shipment shipment = Shipment.builder()
