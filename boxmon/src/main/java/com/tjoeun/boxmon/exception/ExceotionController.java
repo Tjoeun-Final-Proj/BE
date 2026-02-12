@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class ExceotionController {
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<String> handler1(UserNotFoundException e){
+        e.printStackTrace();
         return ResponseEntity.badRequest().body("이메일 다시 확인");
     }
 }

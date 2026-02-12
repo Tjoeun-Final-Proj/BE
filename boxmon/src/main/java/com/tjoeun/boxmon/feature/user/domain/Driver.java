@@ -16,14 +16,16 @@ public class Driver {
     @JoinColumn(name = "driver_id", nullable = false)
     private User user;
 
+    @Column(name="bank_code")
     private String bankCode;
 
+    @Column(name = "account_number")
     private String accountNumber;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "cert_number")
     private String certNumber;
 
-    @Column(name="holder_name")
+    @Column(name = "holder_name")
     private String holderName;
 
     protected Driver() {}

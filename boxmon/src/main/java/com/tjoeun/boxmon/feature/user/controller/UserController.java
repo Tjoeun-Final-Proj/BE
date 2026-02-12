@@ -1,14 +1,13 @@
 package com.tjoeun.boxmon.feature.user.controller;
 
-import com.tjoeun.boxmon.exception.UserNotFoundException;
 import com.tjoeun.boxmon.feature.user.dto.*;
 import com.tjoeun.boxmon.feature.user.service.UserService;
 import com.tjoeun.boxmon.security.jwt.RefreshTokenService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.tjoeun.boxmon.feature.user.dto.AccountDto;
 
 @RestController
 @RequestMapping("api/user")
@@ -62,5 +61,13 @@ public class UserController {
         userService.UserModify(userId, request);
         return ResponseEntity.ok().build();
     }
+
+    //차주 입금 계좌 정보 입력
+    @PostMapping("account")
+    public ResponseEntity<Void> account(@AuthenticationPrincipal Long userId, @RequestBody @Valid AccountDto request){
+        userService.Account(userId, request);
+        return ResponseEntity.ok().build();
+    }
+
 
 }
