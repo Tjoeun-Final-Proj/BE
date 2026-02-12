@@ -1,5 +1,6 @@
 package com.tjoeun.boxmon.feature.shipment.dto;
 
+import com.tjoeun.boxmon.feature.shipment.domain.CargoType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -40,8 +41,8 @@ public class ShipmentCreateRequest {
     @NotNull(message = "운임은 필수입니다.")
     private Integer price;
 
-    @NotBlank(message = "화물 종류는 필수입니다.")
-    private String cargoType;
+    @NotNull(message = "화물 종류는 필수입니다.")
+    private CargoType cargoType;
 
     @NotNull(message = "화물 중량은 필수입니다.")
     private Double cargoWeight;

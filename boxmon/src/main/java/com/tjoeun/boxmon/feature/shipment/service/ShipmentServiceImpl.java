@@ -2,6 +2,7 @@ package com.tjoeun.boxmon.feature.shipment.service;
 
 import com.tjoeun.boxmon.exception.UserNotFoundException;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
+import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
@@ -40,7 +41,7 @@ public class ShipmentServiceImpl implements ShipmentService {
         Point waypoint2Point = convertToJtsPoint(request.getWaypoint2Point());
 
         // 3. 비용 및 상태 설정
-        String shipmentStatus = "REQUESTED";
+        ShipmentStatus shipmentStatus = ShipmentStatus.REQUESTED;
         BigDecimal price = BigDecimal.valueOf(request.getPrice());
         BigDecimal platformFee = price.multiply(BigDecimal.valueOf(0.1)); ///TODO: 수수료율 하드 코딩 -> 추후 system_setting 테이블 생성 후 여기서 수수료율 전역으로 관리 예정
         BigDecimal profit = price.subtract(platformFee);
