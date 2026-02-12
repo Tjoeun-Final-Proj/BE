@@ -119,16 +119,16 @@ public class Shipment {
     @Builder.Default
     private Boolean driverCancelToggle = false;
 
-    @Column(columnDefinition = "POINT SRID 4326", nullable = false)
+    @Column(name = "pickup_point", columnDefinition = "POINT SRID 4326", nullable = false)
     private Point pickupPoint; // 출발 경위도
 
-    @Column(columnDefinition = "POINT SRID 4326", nullable = false)
+    @Column(name = "dropoff_point", columnDefinition = "POINT SRID 4326", nullable = false)
     private Point dropoffPoint; // 도착 경위도
 
-    @Column(columnDefinition = "POINT SRID 4326")
+    @Column(name = "waypoint1_point", columnDefinition = "POINT SRID 4326")
     private Point waypoint1Point;
 
-    @Column(columnDefinition = "POINT SRID 4326")
+    @Column(name = "waypoint2_point", columnDefinition = "POINT SRID 4326")
     private Point waypoint2Point;
 
     @Column(name = "created_at", nullable = false, updatable = false)
