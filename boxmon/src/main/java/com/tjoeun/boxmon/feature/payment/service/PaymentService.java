@@ -1,16 +1,16 @@
 package com.tjoeun.boxmon.feature.payment.service;
 
-import com.tjoeun.boxmon.exception.UserNotFoundException;
 import com.tjoeun.boxmon.feature.payment.client.TossApiClient;
-import com.tjoeun.boxmon.feature.payment.domain.PaymentMethod;
-import com.tjoeun.boxmon.feature.user.domain.Shipper;
-import com.tjoeun.boxmon.feature.user.repository.PaymentMethodRepository;
+import com.tjoeun.boxmon.feature.payment.dto.ConfirmPaymentRequest;
+import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
+import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Service
 @RequiredArgsConstructor
@@ -18,26 +18,12 @@ import java.util.UUID;
 public class PaymentService {
 
     private final ShipperRepository shipperRepository;
-    private final PaymentMethodRepository paymentMethodRepository;
     private final TossApiClient tossApiClient;
-    
-    // authKey를 받아 billingKey를 생성하고 PaymentMethod에 저장하는 메서드
-    @Transactional
-    public void registerBillingKey(Long shipperId, String authKey) {
-        // 1. shipperId로 Shipper 엔티티 조회
-        Shipper shipper = shipperRepository.findById(shipperId)
-                .orElseThrow(() -> new UserNotFoundException("ID가 " + shipperId + "인 화주(Shipper)를 찾을 수 없습니다."));
+    private final ShipmentRepository shipmentRepository;
 
-        // 2. authKey를 사용하여 billingKey를 받아오는 로직
-        String billingKey = tossApiClient.requestBillingKey(shipperId.toString(), authKey);
-        
-
-        // 3. PaymentMethod 엔티티 생성 및 저장
-        PaymentMethod paymentMethod = PaymentMethod.builder()
-                .shipper(shipper)
-                .billingKey(billingKey)
-                .build();
-
-        paymentMethodRepository.save(paymentMethod);
+    public void confirmPayment(ConfirmPaymentRequest request) {
+        Shipment shipment = shipmentRepository.findById(request.getShipmentId()).orElseThrow(()->new IllegalArgumentException("운송정보를 찾을 수 없습니다."));
+        long longAmount = shipment.getPrice().setScale(0, RoundingMode.HALF_UP).longValueExact();
+        tossApiClient.confirmPayment(request.getPaymentKey(), String.format("%06d",request.getShipmentId()), longAmount);
     }
 }
