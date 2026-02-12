@@ -26,8 +26,9 @@ public class Vehicle {
     @Column(name = "vehicle_number", nullable = false, unique = true)
     private String vehicleNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "vehicle_type")
-    private String vehicleType;
+    private VehicleType vehicleType;
 
     @Column(name = "can_refrigerate", nullable = false)
     @Builder.Default

@@ -3,7 +3,7 @@ package com.tjoeun.boxmon.feature.shipment.domain;
 import com.tjoeun.boxmon.feature.user.domain.Driver;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
 import jakarta.persistence.*;
-        import lombok.*;
+import lombok.*;
 import org.locationtech.jts.geom.Point;
 
 import java.math.BigDecimal;
@@ -79,11 +79,13 @@ public class Shipment {
     private BigDecimal profit; // 차주 수익
 
     // --- 화물 상세 정보 ---
+    @Enumerated(EnumType.STRING) // DB에 문자열(REQUESTED 등)로 저장
     @Column(name = "shipment_status", nullable = false)
-    private String shipmentStatus; // REQUESTED, ASSIGNED, IN_TRANSIT, DONE, CANCELED
+    private ShipmentStatus shipmentStatus; // String -> ShipmentStatus 변경
 
     @Column(name = "cargo_type", nullable = false)
-    private String cargoType;
+    @Enumerated(EnumType.STRING) // Enum의 이름을 DB에 저장
+    private CargoType cargoType;
 
     @Column(name = "cargo_weight", nullable = false)
     private Double cargoWeight;
@@ -128,4 +130,14 @@ public class Shipment {
 
     @Column(columnDefinition = "POINT SRID 4326")
     private Point waypoint2Point;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt; // 화물 등록 시간
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }
+
+    

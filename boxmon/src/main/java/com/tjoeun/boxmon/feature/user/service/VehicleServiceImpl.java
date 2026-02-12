@@ -26,19 +26,20 @@ public class VehicleServiceImpl implements VehicleService {
                 .orElseThrow(() -> new UserNotFoundException("차주를 찾을 수 없습니다."));
 
         // 2. 이미 등록된 차량 번호인지 확인 (선택 사항: DB unique 제약 조건이 처리할 수도 있음)
-         vehicleRepository.findByVehicleNumber(request.getVehicleNumber()).ifPresent(v -> {
-             try {
-                 throw new DuplicateVehicleException("이미 등록된 차량 번호입니다.");
-             } catch (DuplicateVehicleException e) {
-                 throw new RuntimeException(e);
-             }
-         });
+        // 2. 이미 등록된 차량 번호인지 확인
+        vehicleRepository.findByVehicleNumber(request.getVehicleNumber()).ifPresent(v -> {
+            try {
+                throw new DuplicateVehicleException("이미 등록된 차량 번호입니다.");
+            } catch (DuplicateVehicleException e) {
+                throw new RuntimeException(e);
+            }
+        });;
 
         // 3. Vehicle 엔티티 생성
         Vehicle vehicle = Vehicle.builder()
                 .driver(driver)
                 .vehicleNumber(request.getVehicleNumber())
-                .vehicleType(request.getVehicleType())
+                .vehicleType(request.getVehicleType()) // VehicleType Enum 적용됨
                 .canRefrigerate(request.getCanRefrigerate())
                 .canFreeze(request.getCanFreeze())
                 .weightCapacity(request.getWeightCapacity())
