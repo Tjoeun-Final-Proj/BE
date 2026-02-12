@@ -4,6 +4,7 @@ import com.tjoeun.boxmon.exception.UserNotFoundException;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentListResponse;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
 import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
@@ -16,6 +17,8 @@ import org.locationtech.jts.geom.Point; // 추가 (엔티티의 타입과 일치
 import org.locationtech.jts.geom.PrecisionModel; // 추가
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -74,6 +77,46 @@ public class ShipmentServiceImpl implements ShipmentService {
 
         // 5. 저장
         shipmentRepository.save(shipment);
+    }
+    /**
+     * 내 화물 목록 조회 (필터링 및 최신순 정렬)
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<ShipmentListResponse> getMyShipmentList(Long shipperId, ShipmentStatus status) {
+        List<Shipment> shipments;
+
+        // 상태값(status) 유무에 따라 레포지토리 메서드 분기 호출
+        if (status != null) {
+            shipments = shipmentRepository.findByShipper_ShipperIdAndShipmentStatusOrderByCreatedAtDesc(shipperId, status);
+        } else {
+            shipments = shipmentRepository.findByShipper_ShipperIdOrderByCreatedAtDesc(shipperId);
+        }
+
+        // 스트림을 사용하여 엔티티 리스트를 DTO 리스트로 변환
+        return shipments.stream()
+                .map(this::toShipmentListResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Entity -> ListResponse DTO 변환 (내부 메서드)
+     */
+    private ShipmentListResponse toShipmentListResponse(Shipment shipment) {
+        return ShipmentListResponse.builder()
+                .shipmentId(shipment.getShipmentId())
+                .shipmentStatus(shipment.getShipmentStatus())
+                .cargoType(shipment.getCargoType())
+                .cargoWeight(shipment.getCargoWeight())
+                .pickupAddress(shipment.getPickupAddress())
+                .dropoffAddress(shipment.getDropoffAddress())
+                .pickupDesiredAt(shipment.getPickupDesiredAt())
+                .dropoffDesiredAt(shipment.getDropoffDesiredAt())
+                .price(shipment.getPrice())
+                .createdAt(shipment.getCreatedAt())
+                // 배차 완료된 경우에만 기사님 성함 노출
+                .driverName(shipment.getDriver() != null ? shipment.getDriver().getUser().getName() : "미배차")
+                .build();
     }
 
     /**
