@@ -25,7 +25,7 @@ public class ShipmentDetailResponse {
     private String shipperName;      // 화주 이름 (차주가 볼 때)
     private Long driverId;
     private String driverName;       // 차주 이름 (화주가 볼 때)
-    private String driverPhotoUrl;
+    // private String driverPhotoUrl;
 
     // 3. 실시간 위치 및 Google Maps 정보
     private Point currentDriverPoint;       // 차주 최신 좌표 (마커용)
