@@ -1,6 +1,6 @@
 package com.tjoeun.boxmon.feature.admin.dto;
 
-public class CreateRequest {
+public class AdminRequest {
     private String loginId;
     private String password;
     private String name;

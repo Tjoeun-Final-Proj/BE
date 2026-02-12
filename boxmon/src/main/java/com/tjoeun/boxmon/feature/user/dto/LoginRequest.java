@@ -1,7 +1,9 @@
 package com.tjoeun.boxmon.feature.user.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
 
+@Getter
 public class LoginRequest {
 
     @NotBlank
@@ -10,6 +12,7 @@ public class LoginRequest {
     @NotBlank
     private String password;
 
-    public String getEmail() { return email; }
-    public String getPassword() { return password; }
+    @NotBlank
+    private String deviceToken;
+
 }

@@ -31,7 +31,17 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/user/login", "/api/user/signup", "/api/user/refresh").permitAll()
+                        .requestMatchers(
+                                "/api/user/login", 
+                                "/api/user/shipperSignup",
+                                "/api/user/driverSignup",
+                                "/api/user/refresh",
+                                "/api/admin/LoginAdmin",
+                                "/api/admin/create",
+                                //for swagger-ui
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

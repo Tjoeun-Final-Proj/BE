@@ -1,11 +1,15 @@
 package com.tjoeun.boxmon.feature.user.domain;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 public class User {
 
     @Id
@@ -33,6 +37,11 @@ public class User {
     @Column(nullable = false)
     private Boolean isPushEnabled;
 
+    private String businessNumber;
+
+    @Column(nullable = false)
+    private String deviceToken;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     protected UserType userType;
@@ -42,23 +51,17 @@ public class User {
     }
 
     //회원가입 형식
-    public User(String email, String password, String name, String phone, LocalDate birth, UserType userType){
+    public User(String email, String password, String name, String phone, LocalDate birth, Boolean isPushEnabled, UserType userType, String businessNumber, String deviceToken){
         this.email = email;
         this.password = password;
         this.name = name;
         this.phone = phone;
         this.createdAt = LocalDateTime.now();
         this.birth = birth;
-        this.isPushEnabled = true;
+        this.isPushEnabled = isPushEnabled;
         this.userType = userType;
+        this.businessNumber = businessNumber;
+        this.deviceToken = deviceToken;
     }
 
-
-    public String getPassword() {
-        return password;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
 }

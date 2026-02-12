@@ -44,6 +44,8 @@ dependencies {
     //토스 api 호출용
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("org.springframework.boot:spring-boot-starter-restclient")
+
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1")
 }
 
 tasks.withType<Test> {

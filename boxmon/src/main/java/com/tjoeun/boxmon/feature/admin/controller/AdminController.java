@@ -1,6 +1,6 @@
 package com.tjoeun.boxmon.feature.admin.controller;
 
-import com.tjoeun.boxmon.feature.admin.dto.CreateRequest;
+import com.tjoeun.boxmon.feature.admin.dto.AdminRequest;
 import com.tjoeun.boxmon.feature.admin.service.AdminService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,7 +18,12 @@ public class AdminController {
     }
 
     @PostMapping("/create")
-    public void createAdmin(@RequestBody CreateRequest request) {
+    public void createAdmin(@RequestBody AdminRequest request) {
         adminService.createAdmin(request);
+    }
+
+    @PostMapping("LoginAdmin")
+    public void loginAdmin(@RequestBody AdminRequest request){
+        adminService.login(request);
     }
 }

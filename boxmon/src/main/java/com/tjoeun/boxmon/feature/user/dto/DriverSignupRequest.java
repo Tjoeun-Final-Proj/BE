@@ -1,10 +1,15 @@
 package com.tjoeun.boxmon.feature.user.dto;
 
 import com.tjoeun.boxmon.feature.user.domain.UserType;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+
 import java.time.LocalDate;
 
-public class SignupRequest {
+@Getter
+public class DriverSignupRequest {
 
     @Email
     @NotBlank
@@ -23,14 +28,14 @@ public class SignupRequest {
     private LocalDate birth;
 
     @NotNull
+    private Boolean isPushEnabled;
+
+    @NotNull
     private UserType userType;
 
-    public String getEmail() { return email; }
-    public String getPassword() { return password; }
-    public String getName() { return name; }
-    public String getPhone() { return phone; }
-    public LocalDate getBirth() { return birth; }
-    public UserType getUserType() { return userType; }
+    private String businessNumber;
 
+    @NotNull
+    private String certNumber;
 
 }

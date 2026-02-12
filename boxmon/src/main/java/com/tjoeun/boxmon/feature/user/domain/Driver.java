@@ -1,40 +1,37 @@
 package com.tjoeun.boxmon.feature.user.domain;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
 
 @Entity
+@Getter
 public class Driver {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="driver_id")
     private Long driverId;
 
+    @MapsId
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "driver_id", nullable = false)
     private User user;
 
-    @Enumerated(EnumType.STRING)
+    private String bankCode;
+
+    private String accountNumber;
+
     @Column(nullable = false)
-    private Status status;
+    private String certNumber;
+
+    @Column(name="holder_name")
+    private String holderName;
 
     protected Driver() {}
 
-    public Driver(User user) {
+    public Driver(User user, String certNumber) {
         this.user = user;
-        this.status = Status.PENDING;
-    }
-    public Status getApprovalStatus() {
-        return status;
+        this.certNumber = certNumber;
     }
 
-    public void approve() {
-        this.status = Status.APPROVED;
-    }
 
-    public void reject() {
-        this.status = Status.REJECT;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
 }

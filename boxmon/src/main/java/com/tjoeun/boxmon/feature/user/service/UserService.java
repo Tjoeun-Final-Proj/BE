@@ -2,15 +2,14 @@ package com.tjoeun.boxmon.feature.user.service;
 
 import com.tjoeun.boxmon.exception.DuplicateEmailException;
 import com.tjoeun.boxmon.exception.InvalidPasswordException;
-import com.tjoeun.boxmon.exception.InvalidTokenException;
-import com.tjoeun.boxmon.exception.TokenTypeMismatchException;
 import com.tjoeun.boxmon.exception.UserNotFoundException;
+import com.tjoeun.boxmon.feature.user.domain.Driver;
+import com.tjoeun.boxmon.feature.user.domain.Shipper;
 import com.tjoeun.boxmon.feature.user.domain.User;
-import com.tjoeun.boxmon.feature.user.dto.LoginRequest;
-import com.tjoeun.boxmon.feature.user.dto.LoginResponse;
-import com.tjoeun.boxmon.feature.user.dto.SignupRequest;
-import com.tjoeun.boxmon.feature.user.dto.TokenRefreshRequest;
-import com.tjoeun.boxmon.feature.user.dto.TokenRefreshResponse;
+import com.tjoeun.boxmon.feature.user.domain.UserType;
+import com.tjoeun.boxmon.feature.user.dto.*;
+import com.tjoeun.boxmon.feature.user.repository.DriverRepository;
+import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
 import com.tjoeun.boxmon.feature.user.repository.UserRepository;
 
 import com.tjoeun.boxmon.security.jwt.JwtProvider;
@@ -22,17 +21,21 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final ShipperRepository shipperRepository;
+    private final DriverRepository driverRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtProvider jwtProvider) {
-        this.userRepository = userRepository;
+    public UserService(UserRepository userRepository, UserRepository userRepository1, ShipperRepository shipperRepository, DriverRepository driverRepository, PasswordEncoder passwordEncoder, JwtProvider jwtProvider) {
+        this.userRepository = userRepository1;
+        this.shipperRepository = shipperRepository;
+        this.driverRepository = driverRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtProvider = jwtProvider;
     }
 
-    //회원가입
-    public void signup(SignupRequest request) {
+    //화주 회원가입
+    public void shipperSignup(ShipperSignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateEmailException("이미 존재하는 이메일입니다");
         }
@@ -43,9 +46,44 @@ public class UserService {
                 request.getName(),
                 request.getPhone(),
                 request.getBirth(),
-                request.getUserType()
+                request.getIsPushEnabled(),
+                request.getUserType(),
+                request.getBusinessNumber(),
+                ""
+
         );
-        userRepository.save(user);
+        user = userRepository.save(user);
+        Shipper shipper = new Shipper(user);
+        shipperRepository.save(shipper);
+    }
+
+    //차주 회원가입
+    public void driverSignup(DriverSignupRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new DuplicateEmailException("이미 존재하는 이메일입니다");
+        }
+
+        //자격증 확인 넣어야함
+
+        String encodedPW = passwordEncoder.encode(request.getPassword());
+        User user = new User(
+                request.getEmail(),
+                encodedPW,
+                request.getName(),
+                request.getPhone(),
+                request.getBirth(),
+                request.getIsPushEnabled(),
+                request.getUserType(),
+                request.getBusinessNumber(),
+                ""
+        );
+        user = userRepository.save(user);
+
+        Driver driver = new Driver(
+                user,
+                request.getCertNumber()
+                );
+        driverRepository.save(driver);
     }
 
 
@@ -58,40 +96,52 @@ public class UserService {
             throw new InvalidPasswordException("비밀번호 불일치");
         }
 
+        user.setDeviceToken(request.getDeviceToken());
+        userRepository.save(user);
+
         // Access Token 생성 (15분 만료)
         String accessToken = jwtProvider.createAccessToken(user.getUserId());
         
         // Refresh Token 생성 (14일 만료)
         String refreshToken = jwtProvider.createRefreshToken(user.getUserId());
 
-        return new LoginResponse(accessToken, refreshToken);
+        UserType userType = user.getUserType();
+
+        return new LoginResponse(accessToken, refreshToken, userType);
     }
 
-    // Access Token 갱신
-    public TokenRefreshResponse refreshToken(TokenRefreshRequest request) {
-        String refreshTokenValue = request.getRefreshToken();
+    // 회원 정보 수정
+    public void UserModify(Long userId, UserModify request) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
+        user.setName(request.getName());
+        user.setPhone(request.getPhone());
+        user.setBusinessNumber(request.getBusinessNumber());
+        user.setIsPushEnabled(request.getIsPushEnabled());
 
-        // Refresh Token 유효성 검증 (서명, 만료 확인)
-        if (!jwtProvider.validateToken(refreshTokenValue)) {
-            throw new InvalidTokenException("유효하지 않은 Refresh Token");
-        }
-
-        // Refresh Token 타입 확인
-        String tokenType = jwtProvider.getTokenType(refreshTokenValue);
-        if (!"REFRESH".equals(tokenType)) {
-            throw new TokenTypeMismatchException("Refresh Token이 아닙니다");
-        }
-
-        // Refresh Token에서 userId 추출
-        Long userId = jwtProvider.getUserIdFromToken(refreshTokenValue);
-
-        // 새로운 Access Token 생성
-        String newAccessToken = jwtProvider.createAccessToken(userId);
-
-        // 새로운 Refresh Token 생성
-        String newRefreshToken = jwtProvider.createRefreshToken(userId);
-
-        return new TokenRefreshResponse(newAccessToken, newRefreshToken);
+        userRepository.save(user);
     }
+
+    //차주 계좌 정보 입력
+    public void AccountModify(Long userId, UserModify request) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
+        user.setName(request.getName());
+        user.setPhone(request.getPhone());
+        user.setBusinessNumber(request.getBusinessNumber());
+        user.setIsPushEnabled(request.getIsPushEnabled());
+
+        userRepository.save(user);
+    }
+
+
+    /*
+            this.bankCode = bankCode;
+        this.accountNumber = accountNumber;
+        this.certNumber = certNumber;
+        this.holderName = holderName;
+    }
+     */
+
 
 }

@@ -2,16 +2,19 @@ package com.tjoeun.boxmon.feature.user.domain;
 
 import com.tjoeun.boxmon.feature.user.domain.User;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 @Entity
+@Getter
 public class Shipper {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="shipper_id")
     private Long shipperId;
 
+    @MapsId
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "shipper_id", nullable = false)
     private User user;
 
     protected Shipper() {}
@@ -20,11 +23,5 @@ public class Shipper {
         this.user = user;
     }
 
-    public Long getShipperId() {
-        return shipperId;
-    }
 
-    public User getUser() {
-        return user;
-    }
 }
