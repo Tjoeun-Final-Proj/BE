@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.locationtech.jts.geom.Point;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -69,13 +70,13 @@ public class Shipment {
 
     // --- 비용 및 수익 ---
     @Column(name = "price", nullable = false)
-    private Integer price; // 운임 전체 비용
+    private BigDecimal price; // 운임 전체 비용
 
     @Column(name = "platform_fee", nullable = false)
-    private Integer platformFee; // 수수료
+    private BigDecimal platformFee; // 수수료
 
     @Column(name = "profit", nullable = false)
-    private Integer profit; // 차주 수익
+    private BigDecimal profit; // 차주 수익
 
     // --- 화물 상세 정보 ---
     @Column(name = "shipment_status", nullable = false)
