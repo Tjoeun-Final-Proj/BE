@@ -1,6 +1,6 @@
 package com.tjoeun.boxmon.feature.user.repository;
 
-import com.tjoeun.boxmon.feature.payment.domain.PaymentMethod;
+
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

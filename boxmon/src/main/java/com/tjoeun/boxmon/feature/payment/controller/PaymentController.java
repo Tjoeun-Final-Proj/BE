@@ -1,54 +1,31 @@
 package com.tjoeun.boxmon.feature.payment.controller;
 
-import com.tjoeun.boxmon.feature.payment.domain.PaymentMethod;
-import com.tjoeun.boxmon.feature.payment.dto.AuthKeyRequest;
+import com.tjoeun.boxmon.feature.payment.dto.ConfirmPaymentRequest;
 import com.tjoeun.boxmon.feature.payment.service.PaymentService;
+import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
+@Slf4j
 @RestController
 @RequestMapping("/api/payment")
 @RequiredArgsConstructor
 public class PaymentController {
-
     private final PaymentService paymentService;
-    /*
-    // JWT 토큰에서 사용자 ID를 추출하는 임시 메서드
-    // 실제 구현에서는 UserDetails 또는 CustomUserPrincipal 등을 사용해야 합니다.
-    private Long getCurrentShipperId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    private final ShipmentRepository shipmentRepository;
 
-        // 1. 인증 객체가 null인지 확인
-        // 2. Principal이 Long 타입인지 확인 (JwtFilter에서 Long으로 저장했기 때문)
-        if (authentication != null && authentication.getPrincipal() instanceof Long) {
-            return (Long) authentication.getPrincipal();
-        }
-
-        // 디버깅을 위해 실제 들어있는 타입이 뭔지 로그를 찍어보는 것이 좋습니다.
-        if (authentication != null) {
-            System.out.println("Principal Type: " + authentication.getPrincipal().getClass().getName());
-            System.out.println("Principal Value: " + authentication.getPrincipal());
-        }
-
-        throw new IllegalStateException("인증된 사용자 정보를 찾을 수 없습니다.");
-    }
-     */
-
-    // 결제 수단(빌링키) 등록 엔드포인트
-    @PostMapping("/billingkey")
-    public ResponseEntity<PaymentMethod> registerBillingKey(
-            @AuthenticationPrincipal Long shipperId, // 이렇게 바로 받을 수 있습니다.
-            @RequestBody AuthKeyRequest authKeyRequest
-    ) {
-        if (shipperId == null) {
-            throw new IllegalStateException("인증된 사용자 정보를 찾을 수 없습니다.");
-        }
-        PaymentMethod paymentMethod = paymentService.registerBillingKey(shipperId, authKeyRequest.getAuthKey());
-        return new ResponseEntity<>(paymentMethod, HttpStatus.CREATED);
+    @PostMapping("/confirm")
+    public ResponseEntity<String> confirmPayment(@RequestBody ConfirmPaymentRequest request) {
+        log.info("request={}",request);
+        paymentService.confirmPayment(request);
+        throw new NotImplementedException("not yet implemented"); //TODO 서비스 구현이 끝나면 삭제해야함
     }
 }
