@@ -9,6 +9,7 @@ import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
 import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.locationtech.jts.geom.Coordinate; // 추가
@@ -24,6 +25,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class ShipmentServiceImpl implements ShipmentService {
+
+    @Value("${google.maps.api-key}")
+    private String googleMapsApiKey; // 필드에 바로 주입
 
     private final ShipmentRepository shipmentRepository;
     private final ShipperRepository shipperRepository;
