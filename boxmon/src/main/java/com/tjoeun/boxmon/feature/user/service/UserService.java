@@ -13,6 +13,7 @@ import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
 import com.tjoeun.boxmon.feature.user.repository.UserRepository;
 
 import com.tjoeun.boxmon.security.jwt.JwtProvider;
+import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +36,7 @@ public class UserService {
     }
 
     //화주 회원가입
+    @Transactional
     public void shipperSignup(ShipperSignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateEmailException("이미 존재하는 이메일입니다");
@@ -57,6 +59,7 @@ public class UserService {
         shipperRepository.save(shipper);
     }
 
+    @Transactional
     //차주 회원가입
     public void driverSignup(DriverSignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -122,26 +125,18 @@ public class UserService {
         userRepository.save(user);
     }
 
-    //차주 계좌 정보 입력
-    public void AccountModify(Long userId, UserModify request) {
+    //차주 입금 계좌 정보 입력 및 수정
+    public void Account(Long userId, AccountDto request) {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
-        user.setName(request.getName());
-        user.setPhone(request.getPhone());
-        user.setBusinessNumber(request.getBusinessNumber());
-        user.setIsPushEnabled(request.getIsPushEnabled());
-
+        user.setName(request.getBankCode());
+        user.setPhone(request.getAccountNumber());
+        user.setBusinessNumber(request.getHolderName());
         userRepository.save(user);
     }
 
 
-    /*
-            this.bankCode = bankCode;
-        this.accountNumber = accountNumber;
-        this.certNumber = certNumber;
-        this.holderName = holderName;
-    }
-     */
+
 
 
 }

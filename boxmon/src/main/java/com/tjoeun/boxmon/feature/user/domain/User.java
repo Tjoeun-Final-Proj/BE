@@ -14,6 +14,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long userId;
 
     @Column(nullable = false, unique = true)
@@ -28,22 +29,23 @@ public class User {
     @Column(nullable = false)
     private String phone;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
     private LocalDate birth;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "is_push_enabled")
     private Boolean isPushEnabled;
 
+    @Column(name = "business_number")
     private String businessNumber;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "device_token")
     private String deviceToken;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, name="user_type")
     protected UserType userType;
 
     protected User(){
