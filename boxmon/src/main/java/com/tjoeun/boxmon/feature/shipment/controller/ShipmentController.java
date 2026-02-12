@@ -2,6 +2,7 @@ package com.tjoeun.boxmon.feature.shipment.controller;
 
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentListResponse;
 import com.tjoeun.boxmon.feature.shipment.service.ShipmentService;
 import jakarta.validation.Valid;
@@ -46,5 +47,20 @@ public class ShipmentController {
         List<ShipmentListResponse> responses = shipmentService.getMyShipmentList(shipperId, status);
 
         return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * 화물 상세 정보 조회 (추가됨)
+     * GET /api/shipment/{shipmentId}
+     * 화주와 차주 화면에서 실시간 위치 및 ETA를 확인하기 위해 사용합니다.
+     */
+    @GetMapping("/{shipmentId}")
+    public ResponseEntity<ShipmentDetailResponse> getShipmentDetail(
+            @PathVariable(name = "shipmentId") Long shipmentId
+    ) {
+        // 서비스에서 Google Directions API 연동 로직이 포함된 상세 데이터를 가져옵니다.
+        ShipmentDetailResponse response = shipmentService.getShipmentDetail(shipmentId);
+
+        return ResponseEntity.ok(response);
     }
 }
