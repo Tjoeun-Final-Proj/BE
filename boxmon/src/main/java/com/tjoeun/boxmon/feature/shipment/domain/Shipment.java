@@ -134,6 +134,9 @@ public class Shipment {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // 화물 등록 시간
 
+    @Column(name = "current_location_point", columnDefinition = "POINT SRID 4326")
+    private Point currentLocationPoint; // 최신 위치만 별도로 보관
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
