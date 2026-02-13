@@ -4,13 +4,10 @@ import com.tjoeun.boxmon.exception.ExternalServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -19,7 +16,6 @@ import java.util.Map;
 @Slf4j
 @Component
 public class TossApiClient {
-    private final String secretKey = "test_sk_zXLkKEypNArWmo50nX3lmeaxYG5R";
     private final RestClient client;
 
     public TossApiClient(RestClient.Builder builder, @Value("${toss-api-key}") String secretKey) {
