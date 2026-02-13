@@ -61,6 +61,9 @@ dependencies {
 
     //swagger-ui 자동 생성
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1")
+    
+    //Firebase Cloud Messaging
+    implementation("com.google.firebase:firebase-admin:9.2.0")
 }
 
 tasks.withType<Test> {
