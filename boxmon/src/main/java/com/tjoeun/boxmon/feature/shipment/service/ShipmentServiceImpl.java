@@ -1,6 +1,7 @@
 package com.tjoeun.boxmon.feature.shipment.service;
 
-import com.tjoeun.boxmon.exception.UserNotFoundException;
+import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
+import com.tjoeun.boxmon.exception.UserNotFoundException; // createShipment에서 UserNotFoundException을 사용하고 있으므로 유지
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
@@ -12,40 +13,57 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.locationtech.jts.geom.Coordinate; // 추가
-import org.locationtech.jts.geom.GeometryFactory; // 추가
-import org.locationtech.jts.geom.Point; // 추가 (엔티티의 타입과 일치)
-import org.locationtech.jts.geom.PrecisionModel; // 추가
-import com.google.maps.DirectionsApi;
-import com.google.maps.GeoApiContext;
-import com.google.maps.model.DirectionsResult;
-import com.google.maps.model.TravelMode;
+import org.locationtech.jts.geom.Coordinate; // JTS 좌표 객체
+import org.locationtech.jts.geom.GeometryFactory; // JTS 지오메트리 객체 생성 팩토리
+import org.locationtech.jts.geom.Point; // JTS 포인트 객체 (엔티티의 타입과 일치)
+import org.locationtech.jts.geom.PrecisionModel; // JTS 정밀 모델 (좌표 정밀도 관리)
+
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
+
+import com.tjoeun.boxmon.global.naver.api.NaverDirectionsApiClient; // Naver Directions API Client import
+import com.tjoeun.boxmon.global.naver.dto.NaverDirectionsResponse; // Naver Directions Response DTO import
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.math.BigDecimal; // 정밀한 소수점 계산을 위한 BigDecimal
+import java.util.stream.Collectors; // 스트림 API 컬렉터
 
+/**
+ * 운송(Shipment) 관련 비즈니스 로직을 처리하는 서비스 구현체.
+ * 화물 생성, 목록 조회, 상세 조회 및 Google Maps API를 이용한 ETA 계산 등의 기능을 제공합니다.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ShipmentServiceImpl implements ShipmentService {
 
-    @Value("${google.maps.api-key}")
-    private String googleMapsApiKey; // 필드에 바로 주입
+    @Value("${naver.maps.client-id}")
+    private String naverMapsClientId;
+
+    @Value("${naver.maps.client-secret}")
+    private String naverMapsClientSecret;
 
     private final ShipmentRepository shipmentRepository;
     private final ShipperRepository shipperRepository;
+    private final NaverDirectionsApiClient naverDirectionsApiClient;
 
     // GPS 표준 좌표계(WGS84)인 SRID 4326을 사용하는 Factory 생성
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
+    /**
+     * 새로운 운송 요청(화물)을 생성합니다.
+     *
+     * @param shipperId 화주(Shipper)의 고유 ID
+     * @param request   화물 생성 요청 데이터 (픽업/드랍오프 정보, 화물 정보 등)
+     * @throws UserNotFoundException 주어진 화주 ID에 해당하는 화주를 찾을 수 없을 때 발생
+     */
     @Override
     public void createShipment(Long shipperId, ShipmentCreateRequest request) {
         // 1. 화주 조회
@@ -95,7 +113,12 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     /**
-     * 내 화물 목록 조회 (필터링 및 최신순 정렬)
+     * 특정 화주(Shipper)의 운송(화물) 목록을 조회합니다.
+     * 상태(status)에 따라 필터링하고, 최신 생성일 기준으로 정렬하여 반환합니다.
+     *
+     * @param shipperId 화주(Shipper)의 고유 ID
+     * @param status    조회할 운송 상태 (예: REQUESTED, IN_TRANSIT 등). null이면 모든 상태 조회.
+     * @return {@link ShipmentListResponse} DTO 리스트
      */
     @Override
     @Transactional(readOnly = true)
@@ -116,7 +139,10 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     /**
-     * Entity -> ListResponse DTO 변환 (내부 메서드)
+     * Shipment 엔티티를 {@link ShipmentListResponse} DTO로 변환합니다.
+     *
+     * @param shipment 변환할 Shipment 엔티티
+     * @return 변환된 {@link ShipmentListResponse} DTO
      */
     private ShipmentListResponse toShipmentListResponse(Shipment shipment) {
         return ShipmentListResponse.builder()
@@ -135,14 +161,19 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .build();
     }
     /**
-     * 화물 상세 정보 조회 (추가 구현)
+     * 특정 운송(화물)의 상세 정보를 조회합니다.
+     * 차주가 배차되었고 현재 위치 정보가 있는 경우, Google Directions API를 사용하여 예상 도착 시간(ETA)과 남은 거리를 계산합니다.
+     *
+     * @param shipmentId 조회할 운송(화물)의 고유 ID
+     * @return {@link ShipmentDetailResponse} DTO
+     * @throws ShipmentNotFoundException 주어진 운송 ID에 해당하는 운송건을 찾을 수 없을 때 발생
      */
     @Override
     @Transactional(readOnly = true)
     public ShipmentDetailResponse getShipmentDetail(Long shipmentId) {
         // 1. 엔티티 조회
         Shipment shipment = shipmentRepository.findById(shipmentId)
-                .orElseThrow(() -> new UserNotFoundException("운송건을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
 
         // 2. 기본 정보 DTO 변환
         ShipmentDetailResponse response = toDetailResponse(shipment);
@@ -158,7 +189,11 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     /**
-     * Google Directions API 연동 로직
+     * Naver Directions 5 API를 호출하여 현재 위치부터 목적지까지의 예상 도착 시간(ETA)과 거리를 계산합니다.
+     * 경유지를 포함하여 거리를 계산하고, 계산된 정보는 {@link ShipmentDetailResponse}에 설정됩니다.
+     *
+     * @param shipment 운송 정보 엔티티
+     * @param response 상세 응답 DTO
      */
     private void calculateEtaAndDistance(Shipment shipment, ShipmentDetailResponse response) {
         // 1. 방어 로직: 필수 좌표가 없으면 중단 (NPE 방지)
@@ -168,45 +203,60 @@ public class ShipmentServiceImpl implements ShipmentService {
             return;
         }
 
-        // 2. 변수 선언 (Google API는 "위도,경도" 순서 문자열 필요)
-        String origin = shipment.getCurrentLocationPoint().getY() + "," + shipment.getCurrentLocationPoint().getX();
-        String destination = shipment.getDropoffPoint().getY() + "," + shipment.getDropoffPoint().getX();
+        // 2. 좌표 변환 (JTS Point -> "경도,위도" 문자열)
+        // 네이버 API는 "경도,위도" 순서를 따름
+        String start = shipment.getCurrentLocationPoint().getX() + "," + shipment.getCurrentLocationPoint().getY();
+        String goal = shipment.getDropoffPoint().getX() + "," + shipment.getDropoffPoint().getY();
 
-        // 3. 로그 출력 (변수 선언 이후에 찍어야 합니다!)
-        log.info("Google Directions API 호출 - 출발지: {}, 목적지: {}", origin, destination);
+        List<String> waypoints = new ArrayList<>();
+        if (shipment.getWaypoint1Point() != null) {
+            waypoints.add(shipment.getWaypoint1Point().getX() + "," + shipment.getWaypoint1Point().getY());
+        }
+        if (shipment.getWaypoint2Point() != null) {
+            waypoints.add(shipment.getWaypoint2Point().getX() + "," + shipment.getWaypoint2Point().getY());
+        }
 
-        try (GeoApiContext context = new GeoApiContext.Builder()
-                .apiKey(googleMapsApiKey)
-                .build()) {
+        log.info("Naver Directions API 호출 - 출발지: {}, 목적지: {}, 경유지: {}", start, goal, waypoints);
 
-            DirectionsResult result = DirectionsApi.newRequest(context)
-                    .mode(TravelMode.DRIVING)
-                    .origin(origin)
-                    .destination(destination)
-                    .language("ko")
-                    .await();
+        Optional<NaverDirectionsResponse> directionsResponseOptional = naverDirectionsApiClient.getDirections(start, goal, waypoints);
 
-            if (result.routes != null && result.routes.length > 0 && result.routes[0].legs.length > 0) {
-                var leg = result.routes[0].legs[0];
+        if (directionsResponseOptional.isPresent()) {
+            NaverDirectionsResponse directionsResponse = directionsResponseOptional.get();
+            // 응답에서 가장 적합한 경로 (예: trafast)를 가져와 요약 정보를 추출합니다.
+            // 네이버 API는 여러 경로 옵션을 제공할 수 있으며, 여기서는 첫 번째 옵션인 trafast를 가정합니다.
+            // 실제 사용 시 어떤 경로를 선택할지 비즈니스 로직에 따라 결정해야 합니다.
+            if (directionsResponse.getRoute() != null && directionsResponse.getRoute().getTrafast() != null && !directionsResponse.getRoute().getTrafast().isEmpty()) {
+                NaverDirectionsResponse.Summary summary = directionsResponse.getRoute().getTrafast().get(0).getSummary();
 
-                // 남은 거리 설정
-                response.setDistanceToDestination(leg.distance.humanReadable);
+                if (summary != null) {
+                    // 남은 거리 설정 (미터 단위를 km로 변환)
+                    response.setDistanceToDestination(String.format("%.1f km", summary.getDistance() / 1000.0));
 
-                // 예상 도착 시간 계산 (현재 서버 시간 + 소요 초)
-                long durationSeconds = leg.duration.inSeconds;
-                response.setEstimatedArrivalTime(LocalDateTime.now().plusSeconds(durationSeconds));
+                    // 예상 도착 시간 계산 (현재 서버 시간 + 소요 밀리초)
+                    long durationSeconds = summary.getDuration() / 1000;
+                    response.setEstimatedArrivalTime(LocalDateTime.now().plusSeconds(durationSeconds));
 
-                log.info("ETA 계산 완료: 거리 {}, 소요시간 {}초", leg.distance.humanReadable, durationSeconds);
+                    log.info("ETA 계산 완료: 거리 {}, 소요시간 {}초", response.getDistanceToDestination(), durationSeconds);
+                } else {
+                    log.warn("Naver Directions API Summary 정보가 없습니다. (Shipment ID: {})", shipment.getShipmentId());
+                    response.setDistanceToDestination("경로 요약 없음");
+                }
+            } else {
+                log.warn("Naver Directions API 경로 정보가 없습니다. (Shipment ID: {})", shipment.getShipmentId());
+                response.setDistanceToDestination("경로 없음");
             }
-        } catch (Exception e) {
-            // 상세 에러 로그 출력 (원인 파악용)
-            log.error("Google Maps API 상세 에러 레포트: ", e);
+        } else {
+            log.error("Naver Directions API 호출 실패 또는 응답 없음. (Shipment ID: {})", shipment.getShipmentId());
             response.setDistanceToDestination("계산 오류");
         }
     }
 
     /**
-     * Entity -> DetailResponse DTO 변환
+     * Shipment 엔티티를 {@link ShipmentDetailResponse} DTO로 변환합니다.
+     * 화물 번호를 생성하고, 드라이버 정보 등을 포함합니다.
+     *
+     * @param shipment 변환할 Shipment 엔티티
+     * @return 변환된 {@link ShipmentDetailResponse} DTO
      */
     private ShipmentDetailResponse toDetailResponse(Shipment shipment) {
         // 화물 번호 생성: [코드]-[날짜]-[ID뒷자리] (예: GEN-260212-001)
@@ -241,16 +291,26 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .build();
     }
 
-    // JTS Point를 Spring Data Point(DTO용)로 변환
+    /**
+     * JTS(Java Topology Suite) {@link Point} 객체를 Spring Data {@link org.springframework.data.geo.Point} 객체로 변환합니다.
+     * DTO에서 사용하기 위한 변환 메서드입니다.
+     *
+     * @param jtsPoint 변환할 JTS Point 객체
+     * @return 변환된 Spring Data Point 객체 (null인 경우 null 반환)
+     */
     private org.springframework.data.geo.Point convertToSpringPoint(Point jtsPoint) {
         if (jtsPoint == null) return null;
         return new org.springframework.data.geo.Point(jtsPoint.getX(), jtsPoint.getY());
     }
 
     /**
-     * org.springframework.data.geo.Point를 org.locationtech.jts.geom.Point로 변환
+     * Spring Data {@link org.springframework.data.geo.Point} 객체를 JTS(Java Topology Suite) {@link Point} 객체로 변환합니다.
+     * DTO에 담긴 x, y 좌표를 JTS 전용 바이너리 객체로 변환하는 데 사용됩니다.
+     * JTS는 기본적으로 x=경도(longitude), y=위도(latitude) 순서를 따릅니다.
+     *
+     * @param source 변환할 Spring Data Point 객체
+     * @return 변환된 JTS Point 객체 (null인 경우 null 반환)
      */
-    // DTO에 담긴 x, y 좌표를 자동으로 JTS 전용 바이너리 객체로 변환해주는 메소드.
     private Point convertToJtsPoint(org.springframework.data.geo.Point source) {
         if (source == null) return null;
         // JTS는 기본적으로 x=경도(longitude), y=위도(latitude) 순서를 따릅니다.
