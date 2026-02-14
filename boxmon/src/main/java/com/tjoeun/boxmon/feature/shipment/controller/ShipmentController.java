@@ -1,9 +1,7 @@
 package com.tjoeun.boxmon.feature.shipment.controller;
 
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentListResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.*;
 import com.tjoeun.boxmon.feature.shipment.service.ShipmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -62,5 +60,24 @@ public class ShipmentController {
         ShipmentDetailResponse response = shipmentService.getShipmentDetail(shipmentId);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 화주용 정산 요약 정보 조회
+     * 이번 달 지출 총액 및 저번 달 대비 차액 반환
+     */
+    @GetMapping("/shipper/settlement/summary")
+    public ResponseEntity<ShipperSettlementSummaryResponse> getSummary(Authentication authentication) {
+        Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
+
+        return ResponseEntity.ok(shipmentService.getShipperSettlementSummary(shipperId));
+    }
+/
+    @GetMapping("/driver/settlement/summary")
+    public ResponseEntity<DriverSettlementSummaryResponse> getDriverSummary(Authentication authentication) {
+        // 차주의 Principal 정보에서 ID 추출 (기존 방식 유지)
+        Long driverId = Long.valueOf(authentication.getPrincipal().toString());
+
+        return ResponseEntity.ok(shipmentService.getDriverSettlementSummary(driverId));
     }
 }
