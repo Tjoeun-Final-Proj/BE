@@ -72,7 +72,7 @@ public class ShipmentController {
 
         return ResponseEntity.ok(shipmentService.getShipperSettlementSummary(shipperId));
     }
-/
+
     @GetMapping("/driver/settlement/summary")
     public ResponseEntity<DriverSettlementSummaryResponse> getDriverSummary(Authentication authentication) {
         // 차주의 Principal 정보에서 ID 추출 (기존 방식 유지)
