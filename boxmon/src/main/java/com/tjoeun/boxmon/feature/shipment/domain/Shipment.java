@@ -137,6 +137,11 @@ public class Shipment {
     @Column(name = "current_location_point", columnDefinition = "POINT SRID 4326")
     private Point currentLocationPoint; // 최신 위치만 별도로 보관
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "settlement_status", nullable = false)
+    @Builder.Default // 빌더를 사용하지 않고 생성할 때를 대비
+    private SettlementStatus settlementStatus = SettlementStatus.INELIGIBLE;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

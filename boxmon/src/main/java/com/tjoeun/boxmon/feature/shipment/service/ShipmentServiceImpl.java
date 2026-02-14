@@ -2,10 +2,10 @@ package com.tjoeun.boxmon.feature.shipment.service;
 
 import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.exception.UserNotFoundException; // createShipment에서 UserNotFoundException을 사용하고 있으므로 유지
+import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentListResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.*;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
 import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
@@ -17,8 +17,6 @@ import org.locationtech.jts.geom.Coordinate; // JTS 좌표 객체
 import org.locationtech.jts.geom.GeometryFactory; // JTS 지오메트리 객체 생성 팩토리
 import org.locationtech.jts.geom.Point; // JTS 포인트 객체 (엔티티의 타입과 일치)
 import org.locationtech.jts.geom.PrecisionModel; // JTS 정밀 모델 (좌표 정밀도 관리)
-
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 
 import com.tjoeun.boxmon.global.naver.api.NaverDirectionsApiClient; // Naver Directions API Client import
 import com.tjoeun.boxmon.global.naver.dto.NaverDirectionsResponse; // Naver Directions Response DTO import
@@ -106,6 +104,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .description(request.getDescription())
                 .cargoPhotoUrl(request.getCargoPhotoUrl())
                 .shipmentStatus(shipmentStatus)
+                .settlementStatus(SettlementStatus.INELIGIBLE)
                 .build();
 
         // 5. 저장
@@ -315,5 +314,51 @@ public class ShipmentServiceImpl implements ShipmentService {
         if (source == null) return null;
         // JTS는 기본적으로 x=경도(longitude), y=위도(latitude) 순서를 따릅니다.
         return geometryFactory.createPoint(new Coordinate(source.getX(), source.getY()));
+    }
+
+    public ShipperSettlementSummaryResponse getShipperSettlementSummary(Long shipperId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 이번 달 시작일 ~ 현재
+        LocalDateTime startOfThisMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
+        // 저번 달 시작일 ~ 저번 달 마지막일
+        LocalDateTime startOfLastMonth = startOfThisMonth.minusMonths(1);
+        LocalDateTime endOfLastMonth = startOfThisMonth.minusNanos(1);
+
+        BigDecimal thisMonthTotal = Optional.ofNullable(
+                shipmentRepository.findTotalAmountByShipperAndPeriod(shipperId, startOfThisMonth, now)
+        ).orElse(BigDecimal.ZERO);
+
+        BigDecimal lastMonthTotal = Optional.ofNullable(
+                shipmentRepository.findTotalAmountByShipperAndPeriod(shipperId, startOfLastMonth, endOfLastMonth)
+        ).orElse(BigDecimal.ZERO);
+
+        return ShipperSettlementSummaryResponse.builder()
+                .thisMonthTotalAmount(thisMonthTotal)
+                .lastMonthTotalAmount(lastMonthTotal)
+                .difference(thisMonthTotal.subtract(lastMonthTotal))
+                .build();
+    }
+
+    public DriverSettlementSummaryResponse getDriverSettlementSummary(Long driverId) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfThisMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime startOfLastMonth = startOfThisMonth.minusMonths(1);
+        LocalDateTime endOfLastMonth = startOfThisMonth.minusNanos(1);
+
+        // profit 컬럼을 합산하도록 변경
+        BigDecimal thisMonthProfit = Optional.ofNullable(
+                shipmentRepository.findTotalProfitByDriverAndPeriod(driverId, startOfThisMonth, now)
+        ).orElse(BigDecimal.ZERO);
+
+        BigDecimal lastMonthProfit = Optional.ofNullable(
+                shipmentRepository.findTotalProfitByDriverAndPeriod(driverId, startOfLastMonth, endOfLastMonth)
+        ).orElse(BigDecimal.ZERO);
+
+        return DriverSettlementSummaryResponse.builder()
+                .thisMonthTotalProfit(thisMonthProfit)
+                .lastMonthTotalProfit(lastMonthProfit)
+                .difference(thisMonthProfit.subtract(lastMonthProfit))
+                .build();
     }
 }

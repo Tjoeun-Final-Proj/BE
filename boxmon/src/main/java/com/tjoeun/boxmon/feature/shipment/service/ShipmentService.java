@@ -1,9 +1,8 @@
 package com.tjoeun.boxmon.feature.shipment.service;
 
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse; // DTO 임포트 추가
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentListResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -23,5 +22,9 @@ public interface ShipmentService {
      * @param shipmentId 화물 식별자
      * @return 화물 상세 응답 DTO
      */
-    ShipmentDetailResponse getShipmentDetail(Long shipmentId); // 이 줄을 추가하세요!
+    ShipmentDetailResponse getShipmentDetail(Long shipmentId);
+
+    ShipperSettlementSummaryResponse getShipperSettlementSummary(Long shipperId);
+
+    DriverSettlementSummaryResponse getDriverSettlementSummary(Long driverId);
 }
