@@ -1,5 +1,6 @@
 package com.tjoeun.boxmon.feature.shipment.service;
 
+import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.*;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,4 +28,20 @@ public interface ShipmentService {
     ShipperSettlementSummaryResponse getShipperSettlementSummary(Long shipperId);
 
     DriverSettlementSummaryResponse getDriverSettlementSummary(Long driverId);
+
+    List<ShipperSettlementListResponse> getShipperSettlementList(
+            Long shipperId,
+            int year,
+            int month,
+            ShipmentStatus shipmentStatus,
+            SettlementStatus settlementStatus
+    );
+
+    List<DriverSettlementListResponse> getDriverSettlementList(
+            Long driverId,
+            int year,
+            int month,
+            ShipmentStatus shipmentStatus,
+            SettlementStatus settlementStatus
+    );
 }

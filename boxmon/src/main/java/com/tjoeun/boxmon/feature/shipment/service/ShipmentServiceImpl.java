@@ -361,4 +361,147 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .difference(thisMonthProfit.subtract(lastMonthProfit))
                 .build();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ShipperSettlementListResponse> getShipperSettlementList(
+            Long shipperId,
+            int year,
+            int month,
+            ShipmentStatus shipmentStatus,
+            SettlementStatus settlementStatus
+    ) {
+        validateYearMonth(year, month);
+        LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0, 0, 0);
+        LocalDateTime end = start.plusMonths(1).minusNanos(1);
+
+        List<Shipment> shipments = findShipperSettlementShipments(
+                shipperId, start, end, shipmentStatus, settlementStatus
+        );
+
+        return shipments.stream()
+                .map(this::toShipperSettlementListResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DriverSettlementListResponse> getDriverSettlementList(
+            Long driverId,
+            int year,
+            int month,
+            ShipmentStatus shipmentStatus,
+            SettlementStatus settlementStatus
+    ) {
+        validateYearMonth(year, month);
+        LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0, 0, 0);
+        LocalDateTime end = start.plusMonths(1).minusNanos(1);
+
+        List<Shipment> shipments = findDriverSettlementShipments(
+                driverId, start, end, shipmentStatus, settlementStatus
+        );
+
+        return shipments.stream()
+                .map(this::toDriverSettlementListResponse)
+                .collect(Collectors.toList());
+    }
+
+    private void validateYearMonth(int year, int month) {
+        if (year < 1) {
+            throw new IllegalArgumentException("year must be a positive integer.");
+        }
+        if (month < 1 || month > 12) {
+            throw new IllegalArgumentException("month must be between 1 and 12.");
+        }
+    }
+
+    private List<Shipment> findShipperSettlementShipments(
+            Long shipperId,
+            LocalDateTime start,
+            LocalDateTime end,
+            ShipmentStatus shipmentStatus,
+            SettlementStatus settlementStatus
+    ) {
+        if (shipmentStatus != null && settlementStatus != null) {
+            return shipmentRepository
+                    .findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
+                            shipperId, start, end, shipmentStatus, settlementStatus
+                    );
+        }
+        if (shipmentStatus != null) {
+            return shipmentRepository
+                    .findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
+                            shipperId, start, end, shipmentStatus
+                    );
+        }
+        if (settlementStatus != null) {
+            return shipmentRepository
+                    .findByShipper_ShipperIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
+                            shipperId, start, end, settlementStatus
+                    );
+        }
+        return shipmentRepository
+                .findByShipper_ShipperIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+                        shipperId, start, end
+                );
+    }
+
+    private List<Shipment> findDriverSettlementShipments(
+            Long driverId,
+            LocalDateTime start,
+            LocalDateTime end,
+            ShipmentStatus shipmentStatus,
+            SettlementStatus settlementStatus
+    ) {
+        if (shipmentStatus != null && settlementStatus != null) {
+            return shipmentRepository
+                    .findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
+                            driverId, start, end, shipmentStatus, settlementStatus
+                    );
+        }
+        if (shipmentStatus != null) {
+            return shipmentRepository
+                    .findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
+                            driverId, start, end, shipmentStatus
+                    );
+        }
+        if (settlementStatus != null) {
+            return shipmentRepository
+                    .findByDriver_DriverIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
+                            driverId, start, end, settlementStatus
+                    );
+        }
+        return shipmentRepository
+                .findByDriver_DriverIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+                        driverId, start, end
+                );
+    }
+
+    private ShipperSettlementListResponse toShipperSettlementListResponse(Shipment shipment) {
+        return ShipperSettlementListResponse.builder()
+                .shipmentId(shipment.getShipmentId())
+                .shipmentStatus(shipment.getShipmentStatus())
+                .settlementStatus(shipment.getSettlementStatus())
+                .createdAt(shipment.getCreatedAt())
+                .pickupDesiredAt(shipment.getPickupDesiredAt())
+                .dropoffDesiredAt(shipment.getDropoffDesiredAt())
+                .pickupAddress(shipment.getPickupAddress())
+                .dropoffAddress(shipment.getDropoffAddress())
+                .price(shipment.getPrice())
+                .build();
+    }
+
+    private DriverSettlementListResponse toDriverSettlementListResponse(Shipment shipment) {
+        return DriverSettlementListResponse.builder()
+                .shipmentId(shipment.getShipmentId())
+                .shipmentStatus(shipment.getShipmentStatus())
+                .settlementStatus(shipment.getSettlementStatus())
+                .createdAt(shipment.getCreatedAt())
+                .pickupDesiredAt(shipment.getPickupDesiredAt())
+                .dropoffDesiredAt(shipment.getDropoffDesiredAt())
+                .pickupAddress(shipment.getPickupAddress())
+                .dropoffAddress(shipment.getDropoffAddress())
+                .profit(shipment.getProfit())
+                .build();
+    }
 }
