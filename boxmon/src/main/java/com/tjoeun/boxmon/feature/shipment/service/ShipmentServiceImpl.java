@@ -1,6 +1,7 @@
 package com.tjoeun.boxmon.feature.shipment.service;
 
 import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
+import com.tjoeun.boxmon.exception.RoleAccessDeniedException;
 import com.tjoeun.boxmon.exception.UserNotFoundException; // createShipment에서 UserNotFoundException을 사용하고 있으므로 유지
 import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
@@ -8,6 +9,7 @@ import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.*;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
+import com.tjoeun.boxmon.feature.user.repository.DriverRepository;
 import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,6 +52,7 @@ public class ShipmentServiceImpl implements ShipmentService {
 
     private final ShipmentRepository shipmentRepository;
     private final ShipperRepository shipperRepository;
+    private final DriverRepository driverRepository;
     private final NaverDirectionsApiClient naverDirectionsApiClient;
 
     // GPS 표준 좌표계(WGS84)인 SRID 4326을 사용하는 Factory 생성
@@ -317,6 +320,7 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     public ShipperSettlementSummaryResponse getShipperSettlementSummary(Long shipperId) {
+        validateShipperAccess(shipperId);
         LocalDateTime now = LocalDateTime.now();
 
         // 이번 달 시작일 ~ 현재
@@ -341,6 +345,7 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     public DriverSettlementSummaryResponse getDriverSettlementSummary(Long driverId) {
+        validateDriverAccess(driverId);
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfThisMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime startOfLastMonth = startOfThisMonth.minusMonths(1);
@@ -371,6 +376,7 @@ public class ShipmentServiceImpl implements ShipmentService {
             ShipmentStatus shipmentStatus,
             SettlementStatus settlementStatus
     ) {
+        validateShipperAccess(shipperId);
         validateYearMonth(year, month);
         LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0, 0, 0);
         LocalDateTime end = start.plusMonths(1).minusNanos(1);
@@ -393,6 +399,7 @@ public class ShipmentServiceImpl implements ShipmentService {
             ShipmentStatus shipmentStatus,
             SettlementStatus settlementStatus
     ) {
+        validateDriverAccess(driverId);
         validateYearMonth(year, month);
         LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0, 0, 0);
         LocalDateTime end = start.plusMonths(1).minusNanos(1);
@@ -412,6 +419,18 @@ public class ShipmentServiceImpl implements ShipmentService {
         }
         if (month < 1 || month > 12) {
             throw new IllegalArgumentException("month must be between 1 and 12.");
+        }
+    }
+
+    private void validateShipperAccess(Long shipperId) {
+        if (!shipperRepository.existsById(shipperId)) {
+            throw new RoleAccessDeniedException("Shipper access required.");
+        }
+    }
+
+    private void validateDriverAccess(Long driverId) {
+        if (!driverRepository.existsById(driverId)) {
+            throw new RoleAccessDeniedException("Driver access required.");
         }
     }
 
