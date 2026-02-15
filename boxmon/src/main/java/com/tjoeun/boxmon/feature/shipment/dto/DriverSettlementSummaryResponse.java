@@ -5,6 +5,10 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 
+/**
+ * 운송 기사 정산 요약 응답 DTO 입니다.
+ * 운송 기사의 월별 총 수익 및 전월 대비 차이 정보를 제공합니다.
+ */
 @Getter
 @Builder
 public class DriverSettlementSummaryResponse {
