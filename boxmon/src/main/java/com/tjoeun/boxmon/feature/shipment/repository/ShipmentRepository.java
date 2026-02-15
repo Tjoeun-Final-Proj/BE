@@ -12,16 +12,38 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Shipment 엔티티에 대한 데이터 접근(Repository) 인터페이스입니다.
+ * Spring Data JPA의 JpaRepository를 상속받아 기본적인 CRUD 기능을 제공하며,
+ * 화주 및 운송 기사별 배송 조회, 정산 정보 조회 등을 위한 사용자 정의 쿼리 메서드를 포함합니다.
+ */
 @Repository
 public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
 
+    /**
+     * 특정 화주의 특정 기간 내 모든 배송 목록을 생성일자 내림차순으로 조회합니다.
+     *
+     * @param shipperId 화주 ID
+     * @param startDate 조회 시작일시
+     * @param endDate 조회 종료일시
+     * @return 조건에 해당하는 배송 목록
+     */
     List<Shipment> findByShipper_ShipperIdAndCreatedAtBetweenOrderByCreatedAtDesc(
             Long shipperId,
             LocalDateTime startDate,
             LocalDateTime endDate
     );
 
+    /**
+     * 특정 화주의 특정 기간 내 지정된 배송 상태의 배송 목록을 생성일자 내림차순으로 조회합니다.
+     *
+     * @param shipperId 화주 ID
+     * @param startDate 조회 시작일시
+     * @param endDate 조회 종료일시
+     * @param shipmentStatus 배송 상태
+     * @return 조건에 해당하는 배송 목록
+     */
     List<Shipment> findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
             Long shipperId,
             LocalDateTime startDate,
@@ -29,6 +51,15 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
             ShipmentStatus shipmentStatus
     );
 
+    /**
+     * 특정 화주의 특정 기간 내 지정된 정산 상태의 배송 목록을 생성일자 내림차순으로 조회합니다.
+     *
+     * @param shipperId 화주 ID
+     * @param startDate 조회 시작일시
+     * @param endDate 조회 종료일시
+     * @param settlementStatus 정산 상태
+     * @return 조건에 해당하는 배송 목록
+     */
     List<Shipment> findByShipper_ShipperIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
             Long shipperId,
             LocalDateTime startDate,
@@ -36,6 +67,16 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
             SettlementStatus settlementStatus
     );
 
+    /**
+     * 특정 화주의 특정 기간 내 지정된 배송 상태와 정산 상태의 배송 목록을 생성일자 내림차순으로 조회합니다.
+     *
+     * @param shipperId 화주 ID
+     * @param startDate 조회 시작일시
+     * @param endDate 조회 종료일시
+     * @param shipmentStatus 배송 상태
+     * @param settlementStatus 정산 상태
+     * @return 조건에 해당하는 배송 목록
+     */
     List<Shipment> findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
             Long shipperId,
             LocalDateTime startDate,
@@ -44,12 +85,29 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
             SettlementStatus settlementStatus
     );
 
+    /**
+     * 특정 운송 기사의 특정 기간 내 모든 배송 목록을 생성일자 내림차순으로 조회합니다.
+     *
+     * @param driverId 운송 기사 ID
+     * @param startDate 조회 시작일시
+     * @param endDate 조회 종료일시
+     * @return 조건에 해당하는 배송 목록
+     */
     List<Shipment> findByDriver_DriverIdAndCreatedAtBetweenOrderByCreatedAtDesc(
             Long driverId,
             LocalDateTime startDate,
             LocalDateTime endDate
     );
 
+    /**
+     * 특정 운송 기사의 특정 기간 내 지정된 배송 상태의 배송 목록을 생성일자 내림차순으로 조회합니다.
+     *
+     * @param driverId 운송 기사 ID
+     * @param startDate 조회 시작일시
+     * @param endDate 조회 종료일시
+     * @param shipmentStatus 배송 상태
+     * @return 조건에 해당하는 배송 목록
+     */
     List<Shipment> findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
             Long driverId,
             LocalDateTime startDate,
@@ -57,6 +115,15 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
             ShipmentStatus shipmentStatus
     );
 
+    /**
+     * 특정 운송 기사의 특정 기간 내 지정된 정산 상태의 배송 목록을 생성일자 내림차순으로 조회합니다.
+     *
+     * @param driverId 운송 기사 ID
+     * @param startDate 조회 시작일시
+     * @param endDate 조회 종료일시
+     * @param settlementStatus 정산 상태
+     * @return 조건에 해당하는 배송 목록
+     */
     List<Shipment> findByDriver_DriverIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
             Long driverId,
             LocalDateTime startDate,
@@ -64,6 +131,16 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
             SettlementStatus settlementStatus
     );
 
+    /**
+     * 특정 운송 기사의 특정 기간 내 지정된 배송 상태와 정산 상태의 배송 목록을 생성일자 내림차순으로 조회합니다.
+     *
+     * @param driverId 운송 기사 ID
+     * @param startDate 조회 시작일시
+     * @param endDate 조회 종료일시
+     * @param shipmentStatus 배송 상태
+     * @param settlementStatus 정산 상태
+     * @return 조건에 해당하는 배송 목록
+     */
     List<Shipment> findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
             Long driverId,
             LocalDateTime startDate,
@@ -72,7 +149,14 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
             SettlementStatus settlementStatus
     );
 
-    // 3. 특정 화주의 특정 기간 내 금액 합계를 가져오는 쿼리
+    /**
+     * 특정 화주의 특정 기간 내 모든 배송의 총 운임 합계를 조회합니다.
+     *
+     * @param shipperId 화주 ID
+     * @param startDate 조회 시작일시
+     * @param endDate 조회 종료일시
+     * @return 해당 기간 내 총 운임 합계
+     */
     @Query("SELECT SUM(s.price) FROM Shipment s " +
             "WHERE s.shipper.shipperId = :shipperId " +
             "AND s.createdAt >= :startDate AND s.createdAt <= :endDate")
@@ -82,7 +166,14 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
             @Param("endDate") LocalDateTime endDate
     );
 
-    // 3. 특정 차주의 특정 기간 내 금액 합계를 가져오는 쿼리
+    /**
+     * 특정 운송 기사의 특정 기간 내 모든 배송의 총 수익 합계를 조회합니다.
+     *
+     * @param driverId 운송 기사 ID
+     * @param startDate 조회 시작일시
+     * @param endDate 조회 종료일시
+     * @return 해당 기간 내 총 수익 합계
+     */
     @Query("SELECT SUM(s.profit) FROM Shipment s " +
             "WHERE s.driver.driverId = :driverId " +
             "AND s.createdAt >= :startDate AND s.createdAt <= :endDate")

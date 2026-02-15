@@ -8,6 +8,10 @@ import org.springframework.data.geo.Point;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 배송 상세 정보를 응답하는 DTO 클래스입니다.
+ * 화주 및 운송 기사가 배송의 상세 현황을 확인할 때 사용됩니다.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,42 +19,42 @@ import java.time.LocalDateTime;
 @Builder
 public class ShipmentDetailResponse {
     // 1. 기본 식별 및 상태
-    private Long shipmentId;
-    private String shipmentNumber;    // 추가: GEN-260212-001 형식의 생성된 화물 번호
-    private ShipmentStatus shipmentStatus;
-    private LocalDateTime createdAt;
+    private Long shipmentId; // 배송 고유 ID
+    private String shipmentNumber;    // GEN-260212-001 형식의 생성된 화물 번호
+    private ShipmentStatus shipmentStatus; // 배송 상태
+    private LocalDateTime createdAt; // 배송 생성 일시
 
     // 2. 인적 정보
-    private Long shipperId;
-    private String shipperName;      // 화주 이름 (차주가 볼 때)
-    private Long driverId;
-    private String driverName;       // 차주 이름 (화주가 볼 때)
-    // private String driverPhotoUrl;
+    private Long shipperId; // 화주 ID
+    private String shipperName;      // 화주 이름
+    private Long driverId; // 운송 기사 ID
+    private String driverName;       // 운송 기사 이름
+    // private String driverPhotoUrl; // 운송 기사 프로필 사진 URL (주석 처리됨)
 
     // 3. 실시간 위치 및 Google Maps 정보
-    private Point currentDriverPoint;       // 차주 최신 좌표 (마커용)
-    private String distanceToDestination;    // 목적지까지 남은 거리
-    private LocalDateTime estimatedArrivalTime; // 예상 도착 시간 (시스템현재시간 + 소요시간)
+    private Point currentDriverPoint;       // 운송 기사(차량)의 최신 경위도 좌표 (지도 마커용)
+    private String distanceToDestination;    // 목적지까지 남은 거리 정보
+    private LocalDateTime estimatedArrivalTime; // 예상 도착 시간 (시스템 현재 시간 + 소요 시간)
 
     // 4. 주소 정보
-    private String pickupAddress;
-    private String waypoint1Address;
-    private String waypoint2Address;
-    private String dropoffAddress;
+    private String pickupAddress; // 상차지 주소
+    private String waypoint1Address; // 첫 번째 경유지 주소
+    private String waypoint2Address; // 두 번째 경유지 주소
+    private String dropoffAddress; // 하차지 주소
 
     // 5. 화물 및 차량 상세 정보
-    private CargoType cargoType;             // Enum 자체를 넘겨 프론트에서 code/description 모두 활용 가능
-    private String cargoVolume;              // 시안의 '화물정보' (예: 5미터 가구)
-    private Double cargoWeight;              // 톤수 (예: 5.0)
-    private String vehicleType;              // 차종 (예: 윙바디)
-    private String description;              // 특이사항
+    private CargoType cargoType;             // 화물 종류 (Enum, 프론트에서 code/description 모두 활용 가능)
+    private String cargoVolume;              // 화물 부피 (예: 5미터 가구)
+    private Double cargoWeight;              // 화물 중량 (예: 5.0 톤)
+    private String vehicleType;              // 배송에 사용되는 차종 (예: 윙바디)
+    private String description;              // 화물 특이사항
 
-    // 6. 금액 정보 (이미지 시안 반영)
-    private BigDecimal price;                // 합계금액 (화주 지불액)
-    private BigDecimal platformFee;          // 수수료 (fee)
-    private BigDecimal profit;               // 운송료 (차주 수익)
+    // 6. 금액 정보
+    private BigDecimal price;                // 총 운임 (화주 지불액)
+    private BigDecimal platformFee;          // 플랫폼 수수료
+    private BigDecimal profit;               // 운송 기사 수익 (운송료)
 
     // 7. 정적 좌표
-    private Point pickupPoint;
-    private Point dropoffPoint;
+    private Point pickupPoint; // 상차지 경위도 좌표
+    private Point dropoffPoint; // 하차지 경위도 좌표
 }

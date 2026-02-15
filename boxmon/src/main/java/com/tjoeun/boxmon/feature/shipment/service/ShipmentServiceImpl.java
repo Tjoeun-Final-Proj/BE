@@ -44,18 +44,21 @@ import java.util.stream.Collectors; // 스트림 API 컬렉터
 @Transactional
 public class ShipmentServiceImpl implements ShipmentService {
 
+    // 네이버 지도 API 클라이언트 ID 및 Secret 주입
     @Value("${naver.maps.client-id}")
     private String naverMapsClientId;
 
     @Value("${naver.maps.client-secret}")
     private String naverMapsClientSecret;
 
+    // 의존성 주입: Repository 및 Naver Directions API 클라이언트
     private final ShipmentRepository shipmentRepository;
     private final ShipperRepository shipperRepository;
     private final DriverRepository driverRepository;
     private final NaverDirectionsApiClient naverDirectionsApiClient;
 
-    // GPS 표준 좌표계(WGS84)인 SRID 4326을 사용하는 Factory 생성
+    // JTS(Java Topology Suite) 지오메트리 객체 생성을 위한 팩토리.
+    // GPS 표준 좌표계(WGS84)인 SRID 4326을 사용하도록 설정.
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
     /**
@@ -67,29 +70,32 @@ public class ShipmentServiceImpl implements ShipmentService {
      */
     @Override
     public void createShipment(Long shipperId, ShipmentCreateRequest request) {
-        // 1. 화주 조회
+        // 1. 화주 정보 조회: 요청된 shipperId로 화주 엔티티를 찾고, 없으면 예외 발생
         Shipper shipper = shipperRepository.findById(shipperId)
                 .orElseThrow(() -> new UserNotFoundException("화주를 찾을 수 없습니다."));
 
-        // 2. 좌표 변환 (DTO의 Point -> JTS Point)
+        // 2. 좌표 변환: DTO의 Spring Point 객체를 JTS Point 객체로 변환 (DB 저장용)
         Point pickupPoint = convertToJtsPoint(request.getPickupPoint());
         Point dropoffPoint = convertToJtsPoint(request.getDropoffPoint());
         Point waypoint1Point = convertToJtsPoint(request.getWaypoint1Point());
         Point waypoint2Point = convertToJtsPoint(request.getWaypoint2Point());
 
-        // 3. 비용 및 상태 설정
+        // 3. 배송 초기 상태 및 비용 계산:
+        //    - 배송 상태를 '요청됨'으로 초기화
+        //    - 요청된 운임을 기반으로 플랫폼 수수료 (10%) 및 운송 기사 수익 계산
+        //    - TODO: 수수료율은 현재 하드코딩되어 있으며, 추후 시스템 설정 테이블에서 관리하도록 변경 예정
         ShipmentStatus shipmentStatus = ShipmentStatus.REQUESTED;
         BigDecimal price = BigDecimal.valueOf(request.getPrice());
-        BigDecimal platformFee = price.multiply(BigDecimal.valueOf(0.1)); ///TODO: 수수료율 하드 코딩 -> 추후 system_setting 테이블 생성 후 여기서 수수료율 전역으로 관리 예정
+        BigDecimal platformFee = price.multiply(BigDecimal.valueOf(0.1));
         BigDecimal profit = price.subtract(platformFee);
 
-        // 4. Shipment 엔티티 생성
+        // 4. Shipment 엔티티 빌드 및 생성: 요청 데이터를 기반으로 Shipment 엔티티를 생성
         Shipment shipment = Shipment.builder()
                 .shipper(shipper)
-                .pickupPoint(pickupPoint) // 변환된 JTS Point 사용
+                .pickupPoint(pickupPoint)
                 .pickupAddress(request.getPickupAddress())
                 .pickupDesiredAt(request.getPickupDesiredAt())
-                .dropoffPoint(dropoffPoint) // 변환된 JTS Point 사용
+                .dropoffPoint(dropoffPoint)
                 .dropoffAddress(request.getDropoffAddress())
                 .dropoffDesiredAt(request.getDropoffDesiredAt())
                 .waypoint1Point(waypoint1Point)
@@ -107,10 +113,10 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .description(request.getDescription())
                 .cargoPhotoUrl(request.getCargoPhotoUrl())
                 .shipmentStatus(shipmentStatus)
-                .settlementStatus(SettlementStatus.INELIGIBLE)
+                .settlementStatus(SettlementStatus.INELIGIBLE) // 초기 정산 상태는 '정산 대상 아님'
                 .build();
 
-        // 5. 저장
+        // 5. 생성된 Shipment 엔티티를 데이터베이스에 저장
         shipmentRepository.save(shipment);
     }
 
@@ -125,17 +131,21 @@ public class ShipmentServiceImpl implements ShipmentService {
     @Override
     @Transactional(readOnly = true)
     public ShipmentDetailResponse getShipmentDetail(Long shipmentId) {
-        // 1. 엔티티 조회
+        // 1. Shipment 엔티티 조회: 주어진 shipmentId로 배송 정보를 찾고, 없으면 예외 발생
         Shipment shipment = shipmentRepository.findById(shipmentId)
                 .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
 
-        // 2. 기본 정보 DTO 변환
+        // 2. 기본 정보 DTO 변환: 조회된 Shipment 엔티티를 ShipmentDetailResponse DTO로 변환
         ShipmentDetailResponse response = toDetailResponse(shipment);
 
-        // 3. 차주가 배차되었고 최신 위치 정보가 있는 경우에만 Google API 호출하여 ETA 계산
+        // 3. ETA 및 거리 계산 (조건부):
+        //    - 운송 기사가 배차되었고(driver != null)
+        //    - 운송 기사의 현재 위치 정보가 있는 경우(currentLocationPoint != null)
+        //    에만 Naver Directions API를 호출하여 예상 도착 시간(ETA)과 남은 거리를 계산
         if (shipment.getDriver() != null && shipment.getCurrentLocationPoint() != null) {
             calculateEtaAndDistance(shipment, response);
         } else {
+            // ETA 계산 조건이 충족되지 않으면 경고 로그 출력
             log.warn("차주 위치 정보가 없어 ETA를 계산하지 않습니다. (Shipment ID: {})", shipmentId);
         }
 
@@ -143,22 +153,21 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     /**
-     * Naver Directions 5 API를 호출하여 현재 위치부터 목적지까지의 예상 도착 시간(ETA)과 거리를 계산합니다.
-     * 경유지를 포함하여 거리를 계산하고, 계산된 정보는 {@link ShipmentDetailResponse}에 설정됩니다.
+     * Naver Directions API를 호출하여 현재 위치부터 목적지까지의 예상 도착 시간(ETA)과 거리를 계산합니다.
+     * 경유지를 포함하여 거리를 계산하며, 계산된 정보는 {@link ShipmentDetailResponse}에 설정됩니다.
      *
-     * @param shipment 운송 정보 엔티티
-     * @param response 상세 응답 DTO
+     * @param shipment 운송 정보 엔티티 (현재 위치, 목적지, 경유지 정보 포함)
+     * @param response 상세 응답 DTO (ETA 및 거리 정보가 업데이트될 대상)
      */
     private void calculateEtaAndDistance(Shipment shipment, ShipmentDetailResponse response) {
-        // 1. 방어 로직: 필수 좌표가 없으면 중단 (NPE 방지)
+        // 1. 필수 좌표 유효성 검사: 현재 위치 또는 목적지 좌표가 없으면 ETA 계산을 중단하고 경고 로그를 남김
         if (shipment.getCurrentLocationPoint() == null || shipment.getDropoffPoint() == null) {
             log.warn("운송건 ID {}: 필수 좌표(현재위치 또는 목적지)가 누락되어 ETA를 계산할 수 없습니다.", shipment.getShipmentId());
             response.setDistanceToDestination("좌표 누락");
             return;
         }
 
-        // 2. 좌표 변환 (JTS Point -> "경도,위도" 문자열)
-        // 네이버 API는 "경도,위도" 순서를 따름
+        // 2. 좌표 문자열 변환: JTS Point 객체를 Naver API 요청 형식인 "경도,위도" 문자열로 변환
         String start = shipment.getCurrentLocationPoint().getX() + "," + shipment.getCurrentLocationPoint().getY();
         String goal = shipment.getDropoffPoint().getX() + "," + shipment.getDropoffPoint().getY();
 
@@ -172,24 +181,22 @@ public class ShipmentServiceImpl implements ShipmentService {
 
         log.info("Naver Directions API 호출 - 출발지: {}, 목적지: {}, 경유지: {}", start, goal, waypoints);
 
+        // 3. Naver Directions API 호출: 변환된 좌표와 경유지를 사용하여 길 안내 API 요청
         Optional<NaverDirectionsResponse> directionsResponseOptional = naverDirectionsApiClient.getDirections(start, goal, waypoints);
 
+        // 4. API 응답 처리:
+        //    - 응답이 존재하면 경로 요약 정보(거리, 소요 시간)를 추출하여 DTO에 설정
+        //    - 예상 도착 시간은 현재 서버 시간과 API로부터 받은 소요 시간을 합산하여 계산
+        //    - 응답이 없거나 경로 정보가 불완전하면 경고 로그를 남기고 DTO에 오류 메시지 설정
         if (directionsResponseOptional.isPresent()) {
             NaverDirectionsResponse directionsResponse = directionsResponseOptional.get();
-            // 응답에서 가장 적합한 경로 (예: trafast)를 가져와 요약 정보를 추출합니다.
-            // 네이버 API는 여러 경로 옵션을 제공할 수 있으며, 여기서는 첫 번째 옵션인 trafast를 가정합니다.
-            // 실제 사용 시 어떤 경로를 선택할지 비즈니스 로직에 따라 결정해야 합니다.
             if (directionsResponse.getRoute() != null && directionsResponse.getRoute().getTrafast() != null && !directionsResponse.getRoute().getTrafast().isEmpty()) {
                 NaverDirectionsResponse.Summary summary = directionsResponse.getRoute().getTrafast().get(0).getSummary();
 
                 if (summary != null) {
-                    // 남은 거리 설정 (미터 단위를 km로 변환)
                     response.setDistanceToDestination(String.format("%.1f km", summary.getDistance() / 1000.0));
-
-                    // 예상 도착 시간 계산 (현재 서버 시간 + 소요 밀리초)
                     long durationSeconds = summary.getDuration() / 1000;
                     response.setEstimatedArrivalTime(LocalDateTime.now().plusSeconds(durationSeconds));
-
                     log.info("ETA 계산 완료: 거리 {}, 소요시간 {}초", response.getDistanceToDestination(), durationSeconds);
                 } else {
                     log.warn("Naver Directions API Summary 정보가 없습니다. (Shipment ID: {})", shipment.getShipmentId());
@@ -207,13 +214,14 @@ public class ShipmentServiceImpl implements ShipmentService {
 
     /**
      * Shipment 엔티티를 {@link ShipmentDetailResponse} DTO로 변환합니다.
-     * 화물 번호를 생성하고, 드라이버 정보 등을 포함합니다.
+     * 화물 번호 생성 로직을 포함하며, 운송 기사 정보가 없는 경우 "미배차"로 표시합니다.
      *
      * @param shipment 변환할 Shipment 엔티티
      * @return 변환된 {@link ShipmentDetailResponse} DTO
      */
     private ShipmentDetailResponse toDetailResponse(Shipment shipment) {
-        // 화물 번호 생성: [코드]-[날짜]-[ID뒷자리] (예: GEN-260212-001)
+        // 화물 번호 생성: [화물종류코드]-[생성일자(YYMMDD)]-[ShipmentId 마지막 3자리] 형식
+        // 예: GEN-260212-001 (General Cargo, 26년 02월 12일, Shipment ID 끝 3자리 001)
         String shipmentNumber = String.format("%s-%s-%03d",
                 shipment.getCargoType().getCode(),
                 shipment.getCreatedAt().format(DateTimeFormatter.ofPattern("yyMMdd")),
@@ -226,6 +234,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .createdAt(shipment.getCreatedAt())
                 .shipperId(shipment.getShipper().getShipperId())
                 .shipperName(shipment.getShipper().getUser().getName())
+                // 운송 기사 정보는 배차 여부에 따라 동적으로 설정
                 .driverId(shipment.getDriver() != null ? shipment.getDriver().getDriverId() : null)
                 .driverName(shipment.getDriver() != null ? shipment.getDriver().getUser().getName() : "미배차")
                 //.driverPhotoUrl(shipment.getDriver() != null ? shipment.getDriver().getUser().getProfilePhotoUrl() : null)
@@ -247,10 +256,10 @@ public class ShipmentServiceImpl implements ShipmentService {
 
     /**
      * JTS(Java Topology Suite) {@link Point} 객체를 Spring Data {@link org.springframework.data.geo.Point} 객체로 변환합니다.
-     * DTO에서 사용하기 위한 변환 메서드입니다.
+     * 주로 DTO 반환 시 사용되는 변환 메서드입니다.
      *
-     * @param jtsPoint 변환할 JTS Point 객체
-     * @return 변환된 Spring Data Point 객체 (null인 경우 null 반환)
+     * @param jtsPoint 변환할 JTS Point 객체 (경도, 위도)
+     * @return 변환된 Spring Data Point 객체 (입력값이 null인 경우 null 반환)
      */
     private org.springframework.data.geo.Point convertToSpringPoint(Point jtsPoint) {
         if (jtsPoint == null) return null;
@@ -259,36 +268,39 @@ public class ShipmentServiceImpl implements ShipmentService {
 
     /**
      * Spring Data {@link org.springframework.data.geo.Point} 객체를 JTS(Java Topology Suite) {@link Point} 객체로 변환합니다.
-     * DTO에 담긴 x, y 좌표를 JTS 전용 바이너리 객체로 변환하는 데 사용됩니다.
-     * JTS는 기본적으로 x=경도(longitude), y=위도(latitude) 순서를 따릅니다.
+     * 주로 DTO로부터 받은 좌표를 DB에 저장하기 위한 엔티티 변환 시 사용됩니다.
+     * JTS는 기본적으로 X축을 경도(longitude), Y축을 위도(latitude)로 간주합니다.
      *
-     * @param source 변환할 Spring Data Point 객체
-     * @return 변환된 JTS Point 객체 (null인 경우 null 반환)
+     * @param source 변환할 Spring Data Point 객체 (경도, 위도)
+     * @return 변환된 JTS Point 객체 (입력값이 null인 경우 null 반환)
      */
     private Point convertToJtsPoint(org.springframework.data.geo.Point source) {
         if (source == null) return null;
-        // JTS는 기본적으로 x=경도(longitude), y=위도(latitude) 순서를 따릅니다.
         return geometryFactory.createPoint(new Coordinate(source.getX(), source.getY()));
     }
 
+    @Override
     public ShipperSettlementSummaryResponse getShipperSettlementSummary(Long shipperId) {
+        // 1. 화주 접근 권한 검증: 주어진 shipperId가 유효한 화주인지 확인
         validateShipperAccess(shipperId);
         LocalDateTime now = LocalDateTime.now();
 
-        // 이번 달 시작일 ~ 현재
+        // 2. 기간 설정: 이번 달과 지난 달의 시작일 및 종료일을 계산
         LocalDateTime startOfThisMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
-        // 저번 달 시작일 ~ 저번 달 마지막일
         LocalDateTime startOfLastMonth = startOfThisMonth.minusMonths(1);
-        LocalDateTime endOfLastMonth = startOfThisMonth.minusNanos(1);
+        LocalDateTime endOfLastMonth = startOfThisMonth.minusNanos(1); // 이번 달 시작 직전까지
 
+        // 3. 이번 달 총 운임 조회: 현재 월의 총 운임 합계 (없으면 0으로 간주)
         BigDecimal thisMonthTotal = Optional.ofNullable(
                 shipmentRepository.findTotalAmountByShipperAndPeriod(shipperId, startOfThisMonth, now)
         ).orElse(BigDecimal.ZERO);
 
+        // 4. 지난 달 총 운임 조회: 지난 달의 총 운임 합계 (없으면 0으로 간주)
         BigDecimal lastMonthTotal = Optional.ofNullable(
                 shipmentRepository.findTotalAmountByShipperAndPeriod(shipperId, startOfLastMonth, endOfLastMonth)
         ).orElse(BigDecimal.ZERO);
 
+        // 5. 응답 DTO 빌드: 조회된 금액과 전월 대비 차이를 계산하여 반환
         return ShipperSettlementSummaryResponse.builder()
                 .thisMonthTotalAmount(thisMonthTotal)
                 .lastMonthTotalAmount(lastMonthTotal)
@@ -296,22 +308,28 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .build();
     }
 
+    @Override
     public DriverSettlementSummaryResponse getDriverSettlementSummary(Long driverId) {
+        // 1. 운송 기사 접근 권한 검증: 주어진 driverId가 유효한 운송 기사인지 확인
         validateDriverAccess(driverId);
         LocalDateTime now = LocalDateTime.now();
+
+        // 2. 기간 설정: 이번 달과 지난 달의 시작일 및 종료일을 계산
         LocalDateTime startOfThisMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime startOfLastMonth = startOfThisMonth.minusMonths(1);
-        LocalDateTime endOfLastMonth = startOfThisMonth.minusNanos(1);
+        LocalDateTime endOfLastMonth = startOfThisMonth.minusNanos(1); // 이번 달 시작 직전까지
 
-        // profit 컬럼을 합산하도록 변경
+        // 3. 이번 달 총 수익 조회: 현재 월의 총 수익 합계 (없으면 0으로 간주)
         BigDecimal thisMonthProfit = Optional.ofNullable(
                 shipmentRepository.findTotalProfitByDriverAndPeriod(driverId, startOfThisMonth, now)
         ).orElse(BigDecimal.ZERO);
 
+        // 4. 지난 달 총 수익 조회: 지난 달의 총 수익 합계 (없으면 0으로 간주)
         BigDecimal lastMonthProfit = Optional.ofNullable(
                 shipmentRepository.findTotalProfitByDriverAndPeriod(driverId, startOfLastMonth, endOfLastMonth)
         ).orElse(BigDecimal.ZERO);
 
+        // 5. 응답 DTO 빌드: 조회된 수익과 전월 대비 차이를 계산하여 반환
         return DriverSettlementSummaryResponse.builder()
                 .thisMonthTotalProfit(thisMonthProfit)
                 .lastMonthTotalProfit(lastMonthProfit)
@@ -328,15 +346,20 @@ public class ShipmentServiceImpl implements ShipmentService {
             ShipmentStatus shipmentStatus,
             SettlementStatus settlementStatus
     ) {
+        // 1. 화주 접근 권한 및 연/월 유효성 검증
         validateShipperAccess(shipperId);
         validateYearMonth(year, month);
-        LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0, 0, 0);
-        LocalDateTime end = start.plusMonths(1).minusNanos(1);
 
+        // 2. 조회 기간 설정: 주어진 연도와 월의 시작일과 종료일 계산
+        LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0, 0, 0);
+        LocalDateTime end = start.plusMonths(1).minusNanos(1); // 다음 달 시작 전까지
+
+        // 3. 조건에 맞는 배송 목록 조회: 배송 상태 및 정산 상태 필터를 적용하여 Repository에서 배송 엔티티 목록 조회
         List<Shipment> shipments = findShipperSettlementShipments(
                 shipperId, start, end, shipmentStatus, settlementStatus
         );
 
+        // 4. DTO 변환: 조회된 Shipment 엔티티 목록을 ShipperSettlementListResponse DTO 목록으로 변환하여 반환
         return shipments.stream()
                 .map(this::toShipperSettlementListResponse)
                 .collect(Collectors.toList());
@@ -351,20 +374,33 @@ public class ShipmentServiceImpl implements ShipmentService {
             ShipmentStatus shipmentStatus,
             SettlementStatus settlementStatus
     ) {
+        // 1. 운송 기사 접근 권한 및 연/월 유효성 검증
         validateDriverAccess(driverId);
         validateYearMonth(year, month);
-        LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0, 0, 0);
-        LocalDateTime end = start.plusMonths(1).minusNanos(1);
 
+        // 2. 조회 기간 설정: 주어진 연도와 월의 시작일과 종료일 계산
+        LocalDateTime start = LocalDateTime.of(year, month, 1, 0, 0, 0, 0);
+        LocalDateTime end = start.plusMonths(1).minusNanos(1); // 다음 달 시작 전까지
+
+        // 3. 조건에 맞는 배송 목록 조회: 배송 상태 및 정산 상태 필터를 적용하여 Repository에서 배송 엔티티 목록 조회
         List<Shipment> shipments = findDriverSettlementShipments(
                 driverId, start, end, shipmentStatus, settlementStatus
         );
 
+        // 4. DTO 변환: 조회된 Shipment 엔티티 목록을 DriverSettlementListResponse DTO 목록으로 변환하여 반환
         return shipments.stream()
                 .map(this::toDriverSettlementListResponse)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 입력된 연도(year)와 월(month)의 유효성을 검사합니다.
+     * 유효하지 않은 값이면 {@link IllegalArgumentException}을 발생시킵니다.
+     *
+     * @param year 검사할 연도
+     * @param month 검사할 월
+     * @throws IllegalArgumentException 연도나 월이 유효하지 않을 경우
+     */
     private void validateYearMonth(int year, int month) {
         if (year < 1) {
             throw new IllegalArgumentException("year must be a positive integer.");
@@ -374,18 +410,41 @@ public class ShipmentServiceImpl implements ShipmentService {
         }
     }
 
+    /**
+     * 특정 화주 ID의 존재 여부를 검증하고, 존재하지 않으면 {@link RoleAccessDeniedException}을 발생시킵니다.
+     *
+     * @param shipperId 검사할 화주 ID
+     * @throws RoleAccessDeniedException 해당 화주 ID에 대한 접근 권한이 없거나 화주가 존재하지 않을 경우
+     */
     private void validateShipperAccess(Long shipperId) {
         if (!shipperRepository.existsById(shipperId)) {
             throw new RoleAccessDeniedException("Shipper access required.");
         }
     }
 
+    /**
+     * 특정 운송 기사 ID의 존재 여부를 검증하고, 존재하지 않으면 {@link RoleAccessDeniedException}을 발생시킵니다.
+     *
+     * @param driverId 검사할 운송 기사 ID
+     * @throws RoleAccessDeniedException 해당 운송 기사 ID에 대한 접근 권한이 없거나 운송 기사가 존재하지 않을 경우
+     */
     private void validateDriverAccess(Long driverId) {
         if (!driverRepository.existsById(driverId)) {
             throw new RoleAccessDeniedException("Driver access required.");
         }
     }
 
+    /**
+     * 화주 정산 목록 조회를 위해 다양한 필터 조건(배송 상태, 정산 상태)에 따라 배송 엔티티를 조회합니다.
+     * 필터 조건의 조합에 따라 적절한 Repository 메서드를 호출합니다.
+     *
+     * @param shipperId 화주 ID
+     * @param start 조회 시작일시
+     * @param end 조회 종료일시
+     * @param shipmentStatus 배송 상태 (선택 사항)
+     * @param settlementStatus 정산 상태 (선택 사항)
+     * @return 필터링된 배송 엔티티 목록
+     */
     private List<Shipment> findShipperSettlementShipments(
             Long shipperId,
             LocalDateTime start,
@@ -393,30 +452,45 @@ public class ShipmentServiceImpl implements ShipmentService {
             ShipmentStatus shipmentStatus,
             SettlementStatus settlementStatus
     ) {
+        // 배송 상태와 정산 상태가 모두 지정된 경우
         if (shipmentStatus != null && settlementStatus != null) {
             return shipmentRepository
                     .findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
                             shipperId, start, end, shipmentStatus, settlementStatus
                     );
         }
+        // 배송 상태만 지정된 경우
         if (shipmentStatus != null) {
             return shipmentRepository
                     .findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
                             shipperId, start, end, shipmentStatus
                     );
         }
+        // 정산 상태만 지정된 경우
         if (settlementStatus != null) {
             return shipmentRepository
                     .findByShipper_ShipperIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
                             shipperId, start, end, settlementStatus
                     );
         }
+        // 아무런 필터 조건도 지정되지 않은 경우
         return shipmentRepository
                 .findByShipper_ShipperIdAndCreatedAtBetweenOrderByCreatedAtDesc(
                         shipperId, start, end
                 );
     }
 
+    /**
+     * 운송 기사 정산 목록 조회를 위해 다양한 필터 조건(배송 상태, 정산 상태)에 따라 배송 엔티티를 조회합니다.
+     * 필터 조건의 조합에 따라 적절한 Repository 메서드를 호출합니다.
+     *
+     * @param driverId 운송 기사 ID
+     * @param start 조회 시작일시
+     * @param end 조회 종료일시
+     * @param shipmentStatus 배송 상태 (선택 사항)
+     * @param settlementStatus 정산 상태 (선택 사항)
+     * @return 필터링된 배송 엔티티 목록
+     */
     private List<Shipment> findDriverSettlementShipments(
             Long driverId,
             LocalDateTime start,
@@ -424,30 +498,41 @@ public class ShipmentServiceImpl implements ShipmentService {
             ShipmentStatus shipmentStatus,
             SettlementStatus settlementStatus
     ) {
+        // 배송 상태와 정산 상태가 모두 지정된 경우
         if (shipmentStatus != null && settlementStatus != null) {
             return shipmentRepository
                     .findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
                             driverId, start, end, shipmentStatus, settlementStatus
                     );
         }
+        // 배송 상태만 지정된 경우
         if (shipmentStatus != null) {
             return shipmentRepository
                     .findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
                             driverId, start, end, shipmentStatus
                     );
         }
+        // 정산 상태만 지정된 경우
         if (settlementStatus != null) {
             return shipmentRepository
                     .findByDriver_DriverIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
                             driverId, start, end, settlementStatus
                     );
         }
+        // 아무런 필터 조건도 지정되지 않은 경우
         return shipmentRepository
                 .findByDriver_DriverIdAndCreatedAtBetweenOrderByCreatedAtDesc(
                         driverId, start, end
                 );
     }
 
+    /**
+     * Shipment 엔티티를 {@link ShipperSettlementListResponse} DTO로 변환합니다.
+     * 화주 정산 목록 조회 시 사용됩니다.
+     *
+     * @param shipment 변환할 Shipment 엔티티
+     * @return 변환된 {@link ShipperSettlementListResponse} DTO
+     */
     private ShipperSettlementListResponse toShipperSettlementListResponse(Shipment shipment) {
         return ShipperSettlementListResponse.builder()
                 .shipmentId(shipment.getShipmentId())
@@ -462,6 +547,13 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .build();
     }
 
+    /**
+     * Shipment 엔티티를 {@link DriverSettlementListResponse} DTO로 변환합니다.
+     * 운송 기사 정산 목록 조회 시 사용됩니다.
+     *
+     * @param shipment 변환할 Shipment 엔티티
+     * @return 변환된 {@link DriverSettlementListResponse} DTO
+     */
     private DriverSettlementListResponse toDriverSettlementListResponse(Shipment shipment) {
         return DriverSettlementListResponse.builder()
                 .shipmentId(shipment.getShipmentId())
