@@ -115,54 +115,6 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     /**
-     * 특정 화주(Shipper)의 운송(화물) 목록을 조회합니다.
-     * 상태(status)에 따라 필터링하고, 최신 생성일 기준으로 정렬하여 반환합니다.
-     *
-     * @param shipperId 화주(Shipper)의 고유 ID
-     * @param status    조회할 운송 상태 (예: REQUESTED, IN_TRANSIT 등). null이면 모든 상태 조회.
-     * @return {@link ShipmentListResponse} DTO 리스트
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public List<ShipmentListResponse> getMyShipmentList(Long shipperId, ShipmentStatus status) {
-        List<Shipment> shipments;
-
-        // 상태값(status) 유무에 따라 레포지토리 메서드 분기 호출
-        if (status != null) {
-            shipments = shipmentRepository.findByShipper_ShipperIdAndShipmentStatusOrderByCreatedAtDesc(shipperId, status);
-        } else {
-            shipments = shipmentRepository.findByShipper_ShipperIdOrderByCreatedAtDesc(shipperId);
-        }
-
-        // 스트림을 사용하여 엔티티 리스트를 DTO 리스트로 변환
-        return shipments.stream()
-                .map(this::toShipmentListResponse)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Shipment 엔티티를 {@link ShipmentListResponse} DTO로 변환합니다.
-     *
-     * @param shipment 변환할 Shipment 엔티티
-     * @return 변환된 {@link ShipmentListResponse} DTO
-     */
-    private ShipmentListResponse toShipmentListResponse(Shipment shipment) {
-        return ShipmentListResponse.builder()
-                .shipmentId(shipment.getShipmentId())
-                .shipmentStatus(shipment.getShipmentStatus())
-                .cargoType(shipment.getCargoType())
-                .cargoWeight(shipment.getCargoWeight())
-                .pickupAddress(shipment.getPickupAddress())
-                .dropoffAddress(shipment.getDropoffAddress())
-                .pickupDesiredAt(shipment.getPickupDesiredAt())
-                .dropoffDesiredAt(shipment.getDropoffDesiredAt())
-                .price(shipment.getPrice())
-                .createdAt(shipment.getCreatedAt())
-                // 배차 완료된 경우에만 기사님 성함 노출
-                .driverName(shipment.getDriver() != null ? shipment.getDriver().getUser().getName() : "미배차")
-                .build();
-    }
-    /**
      * 특정 운송(화물)의 상세 정보를 조회합니다.
      * 차주가 배차되었고 현재 위치 정보가 있는 경우, Google Directions API를 사용하여 예상 도착 시간(ETA)과 남은 거리를 계산합니다.
      *
