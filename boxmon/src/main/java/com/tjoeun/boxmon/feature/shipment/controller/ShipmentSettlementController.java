@@ -3,7 +3,9 @@ package com.tjoeun.boxmon.feature.shipment.controller;
 import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementListResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementSummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementListResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementSummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.service.ShipmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -48,5 +50,17 @@ public class ShipmentSettlementController {
         List<DriverSettlementListResponse> responses =
                 shipmentService.getDriverSettlementList(driverId, year, month, shipmentStatus, settlementStatus);
         return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/shipper/summary")
+    public ResponseEntity<ShipperSettlementSummaryResponse> getShipperSettlementSummary(Authentication authentication) {
+        Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(shipmentService.getShipperSettlementSummary(shipperId));
+    }
+
+    @GetMapping("/driver/summary")
+    public ResponseEntity<DriverSettlementSummaryResponse> getDriverSettlementSummary(Authentication authentication) {
+        Long driverId = Long.valueOf(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(shipmentService.getDriverSettlementSummary(driverId));
     }
 }
