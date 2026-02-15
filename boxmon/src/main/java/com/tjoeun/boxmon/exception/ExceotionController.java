@@ -26,4 +26,8 @@ public class ExceotionController {
         log.error(e.getMessage());
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("서버가 외부와의 통신에 실패했습니다. 관리자에게 문의해주세요.");
     }
+    @ExceptionHandler(RoleAccessDeniedException.class)
+    public ResponseEntity<String> roleAccessDeniedException(RoleAccessDeniedException e){
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+    }
 }
