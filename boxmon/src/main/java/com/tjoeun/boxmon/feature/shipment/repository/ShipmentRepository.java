@@ -1,6 +1,7 @@
 package com.tjoeun.boxmon.feature.shipment.repository;
 
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
+import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,6 +20,62 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
     // 2. 특정 화주의 화물을 상태별 필터링하여 최신 등록순으로 조회
     List<Shipment> findByShipper_ShipperIdAndShipmentStatusOrderByCreatedAtDesc(Long shipperId, ShipmentStatus shipmentStatus);
+
+    List<Shipment> findByShipper_ShipperIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+            Long shipperId,
+            LocalDateTime startDate,
+            LocalDateTime endDate
+    );
+
+    List<Shipment> findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
+            Long shipperId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            ShipmentStatus shipmentStatus
+    );
+
+    List<Shipment> findByShipper_ShipperIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
+            Long shipperId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            SettlementStatus settlementStatus
+    );
+
+    List<Shipment> findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
+            Long shipperId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            ShipmentStatus shipmentStatus,
+            SettlementStatus settlementStatus
+    );
+
+    List<Shipment> findByDriver_DriverIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+            Long driverId,
+            LocalDateTime startDate,
+            LocalDateTime endDate
+    );
+
+    List<Shipment> findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
+            Long driverId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            ShipmentStatus shipmentStatus
+    );
+
+    List<Shipment> findByDriver_DriverIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
+            Long driverId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            SettlementStatus settlementStatus
+    );
+
+    List<Shipment> findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
+            Long driverId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            ShipmentStatus shipmentStatus,
+            SettlementStatus settlementStatus
+    );
 
     // 3. 특정 화주의 특정 기간 내 금액 합계를 가져오는 쿼리
     @Query("SELECT SUM(s.price) FROM Shipment s " +
