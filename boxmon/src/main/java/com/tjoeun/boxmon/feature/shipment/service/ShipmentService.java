@@ -14,11 +14,6 @@ public interface ShipmentService {
     void createShipment(Long shipperId, ShipmentCreateRequest request);
 
     /**
-     * 화주 본인의 화물 목록 조회
-     */
-    List<ShipmentListResponse> getMyShipmentList(Long shipperId, ShipmentStatus status);
-
-    /**
      * 화물 상세 정보 조회 (ETA 및 실시간 위치 포함)
      * @param shipmentId 화물 식별자
      * @return 화물 상세 응답 DTO
