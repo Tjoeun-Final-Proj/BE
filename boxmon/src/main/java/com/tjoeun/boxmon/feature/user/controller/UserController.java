@@ -49,12 +49,6 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    // 토근테스트
-    @GetMapping("/test")
-    public String test(@AuthenticationPrincipal Long principal) {
-        return "인증 성공 userId = " +principal;
-    }
-
     // 회원 정보 수정
     @PostMapping("/modify")
     public ResponseEntity<Void> userModify(@AuthenticationPrincipal Long userId, @RequestBody @Valid UserModify request){
