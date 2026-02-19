@@ -666,4 +666,28 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .profit(shipment.getProfit())
                 .build();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UnassignedShipmentResponse> getUnassignedShipments() {
+        List<Shipment> shipments = shipmentRepository.findByShipmentStatusOrderByCreatedAtDesc(ShipmentStatus.REQUESTED);
+        return shipments.stream()
+                .map(this::toUnassignedShipmentResponse)
+                .collect(Collectors.toList());
+    }
+
+    private UnassignedShipmentResponse toUnassignedShipmentResponse(Shipment shipment) {
+        return UnassignedShipmentResponse.builder()
+                .shipmentId(shipment.getShipmentId())
+                .pickupAddress(shipment.getPickupAddress())
+                .dropoffAddress(shipment.getDropoffAddress())
+                .pickupDesiredAt(shipment.getPickupDesiredAt())
+                .dropoffDesiredAt(shipment.getDropoffDesiredAt())
+                .estimatedDistance(shipment.getEstimatedDistance())
+                .cargoWeight(shipment.getCargoWeight())
+                .vehicleType(shipment.getVehicleType().getDescription())
+                .description(shipment.getDescription())
+                .profit(shipment.getProfit())
+                .build();
+    }
 }

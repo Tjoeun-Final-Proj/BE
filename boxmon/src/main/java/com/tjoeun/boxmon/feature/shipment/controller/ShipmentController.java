@@ -2,6 +2,7 @@ package com.tjoeun.boxmon.feature.shipment.controller;
 
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.service.ShipmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * 배송 관련 API 요청을 처리하는 컨트롤러 클래스입니다.
@@ -68,12 +71,20 @@ public class ShipmentController {
     @ApiResponse(responseCode = "401", description = "인증 실패")
     @ApiResponse(responseCode = "404", description = "배송을 찾을 수 없음")
     @ApiResponse(responseCode = "500", description = "서버 오류")
-    @GetMapping("/{shipmentId}")
+    @GetMapping("/detail/{shipmentId}")
     public ResponseEntity<ShipmentDetailResponse> getShipmentDetail(
             @Parameter(description = "배송 ID", example = "1") @PathVariable(name = "shipmentId") Long shipmentId
     ) {
         // Service computes ETA/distance when current driver location exists.
         ShipmentDetailResponse response = shipmentService.getShipmentDetail(shipmentId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "미배차 화물 목록 조회", description = "배차 수락을 위해 배차되지 않은 모든 화물 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "미배차 화물 목록 조회 성공")
+    @GetMapping("/unassigned")
+    public ResponseEntity<List<UnassignedShipmentResponse>> getUnassignedShipments() {
+        List<UnassignedShipmentResponse> response = shipmentService.getUnassignedShipments();
         return ResponseEntity.ok(response);
     }
 }
