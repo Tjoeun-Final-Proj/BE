@@ -19,7 +19,7 @@ public class NaverDirectionsApiClient {
     private final RestClient restClient;
     private final Gson gson;
 
-    private static final String NAVER_DIRECTIONS_API_URL = "https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving";
+    private static final String NAVER_DIRECTIONS_API_URL = "https://maps.apigw.ntruss.com/map-direction/v1/driving";
 
     public NaverDirectionsApiClient(
             @Value("${naver.maps.client-id}") String clientId,
@@ -49,7 +49,8 @@ public class NaverDirectionsApiClient {
 
             String uri = NAVER_DIRECTIONS_API_URL +
                     "?start=" + start +
-                    "&goal=" + goal;
+                    "&goal=" + goal +
+                    "&option=trafast";
 
             if (waypointString.length() > 0) {
                 uri += "&waypoints=" + waypointString.toString();
