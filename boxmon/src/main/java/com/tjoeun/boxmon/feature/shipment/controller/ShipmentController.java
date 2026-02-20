@@ -99,13 +99,8 @@ public class ShipmentController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 미배차 화물 목록을 조회합니다.
-     *
-     * @return 미배차 화물 목록과 HTTP 200 OK 응답
-     */
-    @Operation(summary = "미배차 화물 목록 조회", description = "배차되지 않은 모든 화물 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "미배차 화물 목록 조회 성공")
+    @Operation(summary = "미배차 화물 목록 조회", description = "배차 수락을 위해 배차되지 않은 모든 화물 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "Unassigned shipment list retrieved")
     @GetMapping("/unassigned")
     public ResponseEntity<List<UnassignedShipmentResponse>> getUnassignedShipments() {
         List<UnassignedShipmentResponse> response = shipmentService.getUnassignedShipments();
