@@ -1,5 +1,6 @@
 package com.tjoeun.boxmon;
 
+import com.tjoeun.boxmon.feature.notification.domain.NotificationType;
 import com.tjoeun.boxmon.feature.notification.service.NotificationSender;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -23,6 +24,8 @@ public class NotificationTests {
     public void testNotification() {
         notificationService.send(
                 1L, 
+                1L,
+                NotificationType.ASSIGNMENT_CANCELLATION_REQUESTED,
                 "테스트 메시지 제목",
                 "테스트 메시지 내용aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                 Map.of("content","test payload")
