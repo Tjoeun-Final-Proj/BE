@@ -12,11 +12,11 @@ import com.tjoeun.boxmon.feature.user.domain.Shipper;
 import com.tjoeun.boxmon.feature.user.repository.DriverRepository;
 import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.locationtech.jts.geom.Coordinate; // JTS 좌표 객체
 import org.locationtech.jts.geom.GeometryFactory; // JTS 지오메트리 객체 생성 팩토리
+
 import org.locationtech.jts.geom.Point; // JTS 포인트 객체 (엔티티의 타입과 일치)
 import org.locationtech.jts.geom.PrecisionModel; // JTS 정밀 모델 (좌표 정밀도 관리)
 
@@ -25,6 +25,7 @@ import com.tjoeun.boxmon.global.naver.dto.NaverDirectionsResponse; // Naver Dire
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -43,13 +44,6 @@ import java.util.stream.Collectors; // 스트림 API 컬렉터
 @RequiredArgsConstructor
 @Transactional
 public class ShipmentServiceImpl implements ShipmentService {
-
-    // 네이버 지도 API 클라이언트 ID 및 Secret 주입
-    @Value("${naver.maps.client-id}")
-    private String naverMapsClientId;
-
-    @Value("${naver.maps.client-secret}")
-    private String naverMapsClientSecret;
 
     // 의존성 주입: Repository 및 Naver Directions API 클라이언트
     private final ShipmentRepository shipmentRepository;
@@ -90,9 +84,9 @@ public class ShipmentServiceImpl implements ShipmentService {
         //    - 요청된 운임을 기반으로 플랫폼 수수료 (10%) 및 운송 기사 수익 계산
         //    - TODO: 수수료율은 현재 하드코딩되어 있으며, 추후 시스템 설정 테이블에서 관리하도록 변경 예정
         ShipmentStatus shipmentStatus = ShipmentStatus.REQUESTED;
-        BigDecimal price = BigDecimal.valueOf(request.getPrice());
-        BigDecimal platformFee = price.multiply(BigDecimal.valueOf(0.1));
-        BigDecimal profit = price.subtract(platformFee);
+        BigDecimal price = BigDecimal.valueOf(request.getPrice()).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal platformFee = price.multiply(BigDecimal.valueOf(0.1)).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal profit = price.subtract(platformFee).setScale(0, RoundingMode.HALF_UP);
 
         // 4. Shipment 엔티티 빌드 및 생성: 요청 데이터를 기반으로 Shipment 엔티티를 생성
         Shipment shipment = Shipment.builder()
@@ -170,22 +164,7 @@ public class ShipmentServiceImpl implements ShipmentService {
      * @param response 상세 응답 DTO (이 메서드 내에서 ETA 및 거리 정보가 업데이트됨)
      */
     private void calculateTotalEtaAndDistance(Shipment shipment, ShipmentDetailResponse response) {
-        // 1. 전체 거리 계산 (네이버 Directions API 호출)
-        Double distanceInKm = calculateDistance(
-                shipment.getPickupPoint(),
-                shipment.getDropoffPoint(),
-                Optional.ofNullable(shipment.getWaypoint1Point()),
-                Optional.ofNullable(shipment.getWaypoint2Point())
-        );
-
-        // 2. 거리 정보를 DTO에 설정합니다. (포맷: "123.4", 오류 시 null)
-        if (distanceInKm != null) {
-            response.setDistanceToDestination(String.format("%.1f", distanceInKm));
-        } else {
-            response.setDistanceToDestination(null); // 계산 실패 시 null 설정
-        }
-
-        // 3. ETA 계산을 위해 API 재호출 (시간 정보만 사용)
+        // Single API call to compute distance and ETA.
         String start = shipment.getPickupPoint().getX() + "," + shipment.getPickupPoint().getY();
         String goal = shipment.getDropoffPoint().getX() + "," + shipment.getDropoffPoint().getY();
         List<String> waypoints = new ArrayList<>();
@@ -200,24 +179,16 @@ public class ShipmentServiceImpl implements ShipmentService {
             if (directionsResponse.getRoute() != null && directionsResponse.getRoute().getTrafast() != null && !directionsResponse.getRoute().getTrafast().isEmpty()) {
                 NaverDirectionsResponse.Summary summary = directionsResponse.getRoute().getTrafast().get(0).getSummary();
                 if (summary != null) {
+                    double distanceInKm = summary.getDistance() / 1000.0;
+                    response.setDistanceToDestination(String.format("%.1f", distanceInKm));
                     long durationSeconds = summary.getDuration() / 1000;
-                    // 희망 출발 시간에 예상 소요 시간을 더하여 ETA 계산
                     response.setEstimatedArrivalTime(shipment.getPickupDesiredAt().plusSeconds(durationSeconds));
-                    log.info("전체 경로 ETA 계산 완료: 소요시간 {}초, 기준 시간 {}", durationSeconds, shipment.getPickupDesiredAt());
+                    log.info("Total route ETA calculated: distance {} km, duration {}s, base time {}", String.format("%.1f", distanceInKm), durationSeconds, shipment.getPickupDesiredAt());
                 }
             }
         });
     }
 
-    /**
-     * Naver Directions API를 호출하여 출발지, 도착지, 경유지를 기반으로 예상 거리를 계산합니다.
-     *
-     * @param startPoint 출발지 좌표
-     * @param goalPoint  도착지 좌표
-     * @param waypoint1  경유지1 좌표 (Optional)
-     * @param waypoint2  경유지2 좌표 (Optional)
-     * @return 계산된 거리 (km), 실패 시 null 반환
-     */
     private Double calculateDistance(Point startPoint, Point goalPoint, Optional<Point> waypoint1, Optional<Point> waypoint2) {
         if (startPoint == null || goalPoint == null) {
             log.warn("출발지 또는 목적지 좌표가 없어 거리 계산을 스킵합니다.");
@@ -345,9 +316,9 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .cargoWeight(shipment.getCargoWeight())
                 .vehicleType(shipment.getVehicleType())
                 .description(shipment.getDescription())
-                .price(shipment.getPrice())
-                .platformFee(shipment.getPlatformFee())
-                .profit(shipment.getProfit())
+                .price(roundMoney(shipment.getPrice()))
+                .platformFee(roundMoney(shipment.getPlatformFee()))
+                .profit(roundMoney(shipment.getProfit()))
                 .pickupPoint(convertToSpringPoint(shipment.getPickupPoint()))
                 .dropoffPoint(convertToSpringPoint(shipment.getDropoffPoint()))
                 .build();
@@ -378,6 +349,11 @@ public class ShipmentServiceImpl implements ShipmentService {
         return geometryFactory.createPoint(new Coordinate(source.getX(), source.getY()));
     }
 
+    private BigDecimal roundMoney(BigDecimal value) {
+        if (value == null) return null;
+        return value.setScale(0, RoundingMode.HALF_UP);
+    }
+
     @Override
     public ShipperSettlementSummaryResponse getShipperSettlementSummary(Long shipperId) {
         // 1. 화주 접근 권한 검증: 주어진 shipperId가 유효한 화주인지 확인
@@ -401,9 +377,9 @@ public class ShipmentServiceImpl implements ShipmentService {
 
         // 5. 응답 DTO 빌드: 조회된 금액과 전월 대비 차이를 계산하여 반환
         return ShipperSettlementSummaryResponse.builder()
-                .thisMonthTotalAmount(thisMonthTotal)
-                .lastMonthTotalAmount(lastMonthTotal)
-                .difference(thisMonthTotal.subtract(lastMonthTotal))
+                .thisMonthTotalAmount(roundMoney(thisMonthTotal))
+                .lastMonthTotalAmount(roundMoney(lastMonthTotal))
+                .difference(roundMoney(thisMonthTotal.subtract(lastMonthTotal)))
                 .build();
     }
 
@@ -430,9 +406,9 @@ public class ShipmentServiceImpl implements ShipmentService {
 
         // 5. 응답 DTO 빌드: 조회된 수익과 전월 대비 차이를 계산하여 반환
         return DriverSettlementSummaryResponse.builder()
-                .thisMonthTotalProfit(thisMonthProfit)
-                .lastMonthTotalProfit(lastMonthProfit)
-                .difference(thisMonthProfit.subtract(lastMonthProfit))
+                .thisMonthTotalProfit(roundMoney(thisMonthProfit))
+                .lastMonthTotalProfit(roundMoney(lastMonthProfit))
+                .difference(roundMoney(thisMonthProfit.subtract(lastMonthProfit)))
                 .build();
     }
 
@@ -642,7 +618,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .dropoffDesiredAt(shipment.getDropoffDesiredAt())
                 .pickupAddress(shipment.getPickupAddress())
                 .dropoffAddress(shipment.getDropoffAddress())
-                .price(shipment.getPrice())
+                .price(roundMoney(shipment.getPrice()))
                 .build();
     }
 
@@ -663,7 +639,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .dropoffDesiredAt(shipment.getDropoffDesiredAt())
                 .pickupAddress(shipment.getPickupAddress())
                 .dropoffAddress(shipment.getDropoffAddress())
-                .profit(shipment.getProfit())
+                .profit(roundMoney(shipment.getProfit()))
                 .build();
     }
 
@@ -687,7 +663,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .cargoWeight(shipment.getCargoWeight())
                 .vehicleType(shipment.getVehicleType().getDescription())
                 .description(shipment.getDescription())
-                .profit(shipment.getProfit())
+                .profit(roundMoney(shipment.getProfit()))
                 .build();
     }
 }
