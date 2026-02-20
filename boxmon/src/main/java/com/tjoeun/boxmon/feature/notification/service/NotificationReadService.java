@@ -27,6 +27,4 @@ public class NotificationReadService {
                 .map(mapper::toResponse)
                 .toList();
     }
-
-    //TODO 알림 유스케이스별 메소드 추가 ex) 채팅 알림보내기, 배차완료 알림 보내기 등...
 }
