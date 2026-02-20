@@ -27,6 +27,13 @@ public interface ShipmentService {
      */
     ShipmentDetailResponse getShipmentDetail(Long shipmentId);
 
+    /**
+     * 배차 수락용 상세 조회 (ETA/거리 계산 제외)
+     * @param shipmentId 배송 ID
+     * @return 배송 상세 응답 DTO
+     */
+    ShipmentDetailResponse getShipmentAcceptDetail(Long shipmentId);
+
     List<UnassignedShipmentResponse> getUnassignedShipments();
 
     /**

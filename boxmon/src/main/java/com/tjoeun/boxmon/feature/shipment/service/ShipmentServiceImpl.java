@@ -55,6 +55,15 @@ public class ShipmentServiceImpl implements ShipmentService {
     // GPS 표준 좌표계(WGS84)인 SRID 4326을 사용하도록 설정.
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
+    @Override
+    @Transactional(readOnly = true)
+    public ShipmentDetailResponse getShipmentAcceptDetail(Long shipmentId) {
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
+
+        return toDetailResponse(shipment);
+    }
+
     /**
      * 새로운 운송 요청(화물)을 생성합니다.
      *

@@ -79,9 +79,28 @@ public class ShipmentController {
         ShipmentDetailResponse response = shipmentService.getShipmentDetail(shipmentId);
         return ResponseEntity.ok(response);
     }
+    /**
+     * 배차 수락용 화물 상세 정보를 조회합니다. (ETA/거리 계산 없음)
+     *
+     * @param shipmentId 조회할 배송의 고유 ID
+     * @return 배송 상세 정보와 HTTP 200 OK 응답
+     */
+    @Operation(summary = "배차 수락용 화물 상세 정보 조회", description = "ETA/거리 계산 없이 화물 상세 정보를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "배송 상세 정보 조회 성공",
+            content = @Content(schema = @Schema(implementation = ShipmentDetailResponse.class)))
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "404", description = "배송을 찾을 수 없음")
+    @ApiResponse(responseCode = "500", description = "서버 오류")
+    @GetMapping("/accept-detail/{shipmentId}")
+    public ResponseEntity<ShipmentDetailResponse> getShipmentAcceptDetail(
+            @Parameter(description = "배송 ID", example = "1") @PathVariable(name = "shipmentId") Long shipmentId
+    ) {
+        ShipmentDetailResponse response = shipmentService.getShipmentAcceptDetail(shipmentId);
+        return ResponseEntity.ok(response);
+    }
 
     @Operation(summary = "미배차 화물 목록 조회", description = "배차 수락을 위해 배차되지 않은 모든 화물 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "미배차 화물 목록 조회 성공")
+    @ApiResponse(responseCode = "200", description = "Unassigned shipment list retrieved")
     @GetMapping("/unassigned")
     public ResponseEntity<List<UnassignedShipmentResponse>> getUnassignedShipments() {
         List<UnassignedShipmentResponse> response = shipmentService.getUnassignedShipments();
