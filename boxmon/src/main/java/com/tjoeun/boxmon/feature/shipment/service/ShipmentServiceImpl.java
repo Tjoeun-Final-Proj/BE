@@ -323,7 +323,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .cargoType(shipment.getCargoType())
                 .cargoVolume(shipment.getCargoVolume())
                 .cargoWeight(shipment.getCargoWeight())
-                .vehicleType(shipment.getVehicleType())
+                .vehicleType(shipment.getVehicleType().getDescription())
                 .description(shipment.getDescription())
                 .price(roundMoney(shipment.getPrice()))
                 .platformFee(roundMoney(shipment.getPlatformFee()))

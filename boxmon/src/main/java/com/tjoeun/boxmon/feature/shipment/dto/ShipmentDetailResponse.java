@@ -2,7 +2,6 @@ package com.tjoeun.boxmon.feature.shipment.dto;
 
 import com.tjoeun.boxmon.feature.shipment.domain.CargoType;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
-import com.tjoeun.boxmon.feature.user.domain.VehicleType;
 import lombok.*;
 import org.springframework.data.geo.Point;
 
@@ -51,7 +50,7 @@ public class ShipmentDetailResponse {
     private CargoType cargoType;             // 화물 종류 (Enum, 프론트에서 code/description 모두 활용 가능)
     private String cargoVolume;              // 화물 부피 (예: 5미터 가구)
     private Double cargoWeight;              // 화물 중량 (예: 5.0 톤)
-    private VehicleType vehicleType;         // 화주 희망 차량 종류 (Enum)
+    private String vehicleType;
     private String description;              // 화물 특이사항
 
     // 7. 금액 정보
