@@ -2,9 +2,12 @@ package com.tjoeun.boxmon.feature.notification.service;
 
 import com.google.firebase.messaging.*;
 import com.tjoeun.boxmon.feature.notification.domain.NotificationLog;
+import com.tjoeun.boxmon.feature.notification.domain.NotificationType;
 import com.tjoeun.boxmon.feature.notification.repository.NotificationRepository;
+import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.user.domain.User;
 import com.tjoeun.boxmon.feature.user.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,23 +21,27 @@ import java.util.Map;
 public class NotificationSender {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager;
 
     //알림 전송 + 알림목록 갱신
-    public void send(Long targetUserId, String title, String body, Map<String,String> extraData){
+    public void send(long targetUserId, long shipmentId, NotificationType type, String title, String body, Map<String,String> extraData) {
         try {
             User target = userRepository.findByUserId(targetUserId).orElseThrow(() -> new IllegalArgumentException("User not found"));
-            send(target, title, body, extraData);
-        }
-        catch (IllegalArgumentException e){
+            send(target, shipmentId, type, title, body, extraData);
+        } catch (IllegalArgumentException e) {
             log.warn("알림 전송 실패. 알림을 보낼 사용자를 찾을 수 없습니다. 사용자 id: {}", targetUserId);
         }
     }
-
+    
     //알림 전송 + 알림목록 갱신
-    public void send(User target, String title, String body, Map<String,String> extraData){
+    public void send(User target, long shipmentId, NotificationType type, String title, String body, Map<String,String> extraData){
+        if(extraData == null) extraData = Map.of("shipmentId",String.valueOf(shipmentId));
+        
         String messageId = sendMessage(target.getDeviceToken(), title, body, extraData);
         NotificationLog sentMessage = NotificationLog.builder()
                 .target(target)
+                .shipment(entityManager.getReference(Shipment.class, shipmentId))
+                .notificationType(type)
                 .notificationTitle(title)
                 .notificationContent(body)
                 .sentAt(LocalDateTime.now())
