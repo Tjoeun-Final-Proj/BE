@@ -164,7 +164,7 @@ public class ShipmentServiceImpl implements ShipmentService {
      * @param response 상세 응답 DTO (이 메서드 내에서 ETA 및 거리 정보가 업데이트됨)
      */
     private void calculateTotalEtaAndDistance(Shipment shipment, ShipmentDetailResponse response) {
-        // Single API call to compute distance and ETA.
+        // 거리와 ETA를 한 번의 API 호출로 계산합니다.
         String start = shipment.getPickupPoint().getX() + "," + shipment.getPickupPoint().getY();
         String goal = shipment.getDropoffPoint().getX() + "," + shipment.getDropoffPoint().getY();
         List<String> waypoints = new ArrayList<>();
@@ -183,12 +183,21 @@ public class ShipmentServiceImpl implements ShipmentService {
                     response.setDistanceToDestination(String.format("%.1f", distanceInKm));
                     long durationSeconds = summary.getDuration() / 1000;
                     response.setEstimatedArrivalTime(shipment.getPickupDesiredAt().plusSeconds(durationSeconds));
-                    log.info("Total route ETA calculated: distance {} km, duration {}s, base time {}", String.format("%.1f", distanceInKm), durationSeconds, shipment.getPickupDesiredAt());
+                    log.info("전체 경로 ETA 계산 완료: 거리 {} km, 소요시간 {}초, 기준 시간 {}", String.format("%.1f", distanceInKm), durationSeconds, shipment.getPickupDesiredAt());
                 }
             }
         });
     }
 
+    /**
+     * Naver Directions API를 호출하여 출발지, 도착지, 경유지를 기반으로 예상 거리를 계산합니다.
+     *
+     * @param startPoint 출발지 좌표
+     * @param goalPoint  도착지 좌표
+     * @param waypoint1  경유지1 좌표 (Optional)
+     * @param waypoint2  경유지2 좌표 (Optional)
+     * @return 계산된 거리 (km), 실패 시 null 반환
+     */
     private Double calculateDistance(Point startPoint, Point goalPoint, Optional<Point> waypoint1, Optional<Point> waypoint2) {
         if (startPoint == null || goalPoint == null) {
             log.warn("출발지 또는 목적지 좌표가 없어 거리 계산을 스킵합니다.");
