@@ -1,6 +1,7 @@
 package com.tjoeun.boxmon.feature.shipment.dto;
 
 import com.tjoeun.boxmon.feature.shipment.domain.CargoType;
+import com.tjoeun.boxmon.feature.user.domain.VehicleType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -42,6 +43,8 @@ public class ShipmentCreateRequest {
     private Point waypoint2Point; // 두 번째 경유지 경위도 좌표
     private String waypoint2Address; // 두 번째 경유지 주소
 
+    private Double estimatedDistance; // 운송 예상 거리 (단위: km)
+
     @NotNull(message = "운임은 필수입니다.")
     private Integer price; // 운임
 
@@ -52,6 +55,9 @@ public class ShipmentCreateRequest {
     private Double cargoWeight; // 화물 중량
 
     private String cargoVolume; // 화물 부피
+
+    @NotNull(message = "희망 차량 종류는 필수입니다.")
+    private VehicleType vehicleType; // 희망 차량 종류
 
     @NotNull(message = "냉장 필요 여부는 필수입니다.")
     private Boolean needRefrigerate; // 냉장 필요 여부

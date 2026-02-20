@@ -80,6 +80,11 @@ public class ShipmentServiceImpl implements ShipmentService {
         Point waypoint1Point = convertToJtsPoint(request.getWaypoint1Point());
         Point waypoint2Point = convertToJtsPoint(request.getWaypoint2Point());
 
+        // 3. 예상 거리 계산 (Naver Directions API)
+        Double estimatedDistance = calculateDistance(pickupPoint, dropoffPoint,
+                Optional.ofNullable(waypoint1Point), Optional.ofNullable(waypoint2Point));
+
+
         // 3. 배송 초기 상태 및 비용 계산:
         //    - 배송 상태를 '요청됨'으로 초기화
         //    - 요청된 운임을 기반으로 플랫폼 수수료 (10%) 및 운송 기사 수익 계산
@@ -102,12 +107,14 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .waypoint1Address(request.getWaypoint1Address())
                 .waypoint2Point(waypoint2Point)
                 .waypoint2Address(request.getWaypoint2Address())
+                .estimatedDistance(estimatedDistance)
                 .price(price)
                 .platformFee(platformFee)
                 .profit(profit)
                 .cargoType(request.getCargoType())
                 .cargoWeight(request.getCargoWeight())
                 .cargoVolume(request.getCargoVolume())
+                .vehicleType(request.getVehicleType())
                 .needRefrigerate(request.getNeedRefrigerate())
                 .needFreeze(request.getNeedFreeze())
                 .description(request.getDescription())
@@ -122,7 +129,9 @@ public class ShipmentServiceImpl implements ShipmentService {
 
     /**
      * 특정 운송(화물)의 상세 정보를 조회합니다.
-     * 차주가 배차되었고 현재 위치 정보가 있는 경우, Google Directions API를 사용하여 예상 도착 시간(ETA)과 남은 거리를 계산합니다.
+     * 차주 배차 여부 및 위치 정보 유무에 따라 다른 기준으로 예상 도착 시간(ETA)과 거리를 계산합니다.
+     * - 실시간 계산 가능 시: 차주 현재 위치를 기준으로 남은 경로의 거리/시간 계산
+     * - 그 외: 화주 희망 출발 시간을 기준으로 전체 경로의 총 거리/시간 계산
      *
      * @param shipmentId 조회할 운송(화물)의 고유 ID
      * @return {@link ShipmentDetailResponse} DTO
@@ -131,43 +140,133 @@ public class ShipmentServiceImpl implements ShipmentService {
     @Override
     @Transactional(readOnly = true)
     public ShipmentDetailResponse getShipmentDetail(Long shipmentId) {
-        // 1. Shipment 엔티티 조회: 주어진 shipmentId로 배송 정보를 찾고, 없으면 예외 발생
+        // 1. Shipment 엔티티 조회
         Shipment shipment = shipmentRepository.findById(shipmentId)
                 .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
 
-        // 2. 기본 정보 DTO 변환: 조회된 Shipment 엔티티를 ShipmentDetailResponse DTO로 변환
+        // 2. 기본 정보 DTO 변환
         ShipmentDetailResponse response = toDetailResponse(shipment);
 
-        // 3. ETA 및 거리 계산 (조건부):
-        //    - 운송 기사가 배차되었고(driver != null)
-        //    - 운송 기사의 현재 위치 정보가 있는 경우(currentLocationPoint != null)
-        //    에만 Naver Directions API를 호출하여 예상 도착 시간(ETA)과 남은 거리를 계산
+        // 3. ETA 및 거리 계산 분기 처리
+        // 실시간 계산 조건: 차주가 배차되었고, 동시에 현재 위치 정보가 있는 경우
         if (shipment.getDriver() != null && shipment.getCurrentLocationPoint() != null) {
-            calculateEtaAndDistance(shipment, response);
-        } else {
-            // ETA 계산 조건이 충족되지 않으면 경고 로그 출력
-            log.warn("차주 위치 정보가 없어 ETA를 계산하지 않습니다. (Shipment ID: {})", shipmentId);
+            log.info("차주 배차 및 위치 정보 확인. 현재 위치를 기준으로 남은 경로 ETA 계산을 시작합니다. (Shipment ID: {})", shipmentId);
+            calculateRemainingEtaAndDistance(shipment, response);
+        }
+        // 그 외 모든 경우 (미배차, 또는 배차 후 미출발 등 위치 정보 없는 상태)
+        else {
+            log.info("차주 미배차 또는 위치 정보 없음. 희망 출발 시간을 기준으로 전체 경로 ETA 계산을 시작합니다. (Shipment ID: {})", shipmentId);
+            calculateTotalEtaAndDistance(shipment, response);
         }
 
         return response;
     }
 
     /**
-     * Naver Directions API를 호출하여 현재 위치부터 목적지까지의 예상 도착 시간(ETA)과 거리를 계산합니다.
-     * 경유지를 포함하여 거리를 계산하며, 계산된 정보는 {@link ShipmentDetailResponse}에 설정됩니다.
+     * [전체 경로 계산] 출발지부터 목적지까지의 전체 예상 시간과 거리를 계산하고 응답 DTO에 설정합니다.
+     * ETA(도착 예정 시간)는 화주의 '희망 출발 시간'을 기준으로 계산됩니다.
+     *
+     * @param shipment 운송 정보 엔티티
+     * @param response 상세 응답 DTO (이 메서드 내에서 ETA 및 거리 정보가 업데이트됨)
+     */
+    private void calculateTotalEtaAndDistance(Shipment shipment, ShipmentDetailResponse response) {
+        // 1. 전체 거리 계산 (네이버 Directions API 호출)
+        Double distanceInKm = calculateDistance(
+                shipment.getPickupPoint(),
+                shipment.getDropoffPoint(),
+                Optional.ofNullable(shipment.getWaypoint1Point()),
+                Optional.ofNullable(shipment.getWaypoint2Point())
+        );
+
+        // 2. 거리 정보를 DTO에 설정합니다. (포맷: "123.4", 오류 시 null)
+        if (distanceInKm != null) {
+            response.setDistanceToDestination(String.format("%.1f", distanceInKm));
+        } else {
+            response.setDistanceToDestination(null); // 계산 실패 시 null 설정
+        }
+
+        // 3. ETA 계산을 위해 API 재호출 (시간 정보만 사용)
+        String start = shipment.getPickupPoint().getX() + "," + shipment.getPickupPoint().getY();
+        String goal = shipment.getDropoffPoint().getX() + "," + shipment.getDropoffPoint().getY();
+        List<String> waypoints = new ArrayList<>();
+        if (shipment.getWaypoint1Point() != null) {
+            waypoints.add(shipment.getWaypoint1Point().getX() + "," + shipment.getWaypoint1Point().getY());
+        }
+        if (shipment.getWaypoint2Point() != null) {
+            waypoints.add(shipment.getWaypoint2Point().getX() + "," + shipment.getWaypoint2Point().getY());
+        }
+
+        naverDirectionsApiClient.getDirections(start, goal, waypoints).ifPresent(directionsResponse -> {
+            if (directionsResponse.getRoute() != null && directionsResponse.getRoute().getTrafast() != null && !directionsResponse.getRoute().getTrafast().isEmpty()) {
+                NaverDirectionsResponse.Summary summary = directionsResponse.getRoute().getTrafast().get(0).getSummary();
+                if (summary != null) {
+                    long durationSeconds = summary.getDuration() / 1000;
+                    // 희망 출발 시간에 예상 소요 시간을 더하여 ETA 계산
+                    response.setEstimatedArrivalTime(shipment.getPickupDesiredAt().plusSeconds(durationSeconds));
+                    log.info("전체 경로 ETA 계산 완료: 소요시간 {}초, 기준 시간 {}", durationSeconds, shipment.getPickupDesiredAt());
+                }
+            }
+        });
+    }
+
+    /**
+     * Naver Directions API를 호출하여 출발지, 도착지, 경유지를 기반으로 예상 거리를 계산합니다.
+     *
+     * @param startPoint 출발지 좌표
+     * @param goalPoint  도착지 좌표
+     * @param waypoint1  경유지1 좌표 (Optional)
+     * @param waypoint2  경유지2 좌표 (Optional)
+     * @return 계산된 거리 (km), 실패 시 null 반환
+     */
+    private Double calculateDistance(Point startPoint, Point goalPoint, Optional<Point> waypoint1, Optional<Point> waypoint2) {
+        if (startPoint == null || goalPoint == null) {
+            log.warn("출발지 또는 목적지 좌표가 없어 거리 계산을 스킵합니다.");
+            return null;
+        }
+
+        String start = startPoint.getX() + "," + startPoint.getY();
+        String goal = goalPoint.getX() + "," + goalPoint.getY();
+
+        List<String> waypoints = new ArrayList<>();
+        waypoint1.ifPresent(p -> waypoints.add(p.getX() + "," + p.getY()));
+        waypoint2.ifPresent(p -> waypoints.add(p.getX() + "," + p.getY()));
+
+        log.info("Naver Directions API 호출 (거리 계산) - 출발지: {}, 목적지: {}, 경유지: {}", start, goal, waypoints);
+        Optional<NaverDirectionsResponse> directionsResponseOptional = naverDirectionsApiClient.getDirections(start, goal, waypoints);
+
+        return directionsResponseOptional.map(response -> {
+            if (response.getRoute() != null && response.getRoute().getTrafast() != null && !response.getRoute().getTrafast().isEmpty()) {
+                NaverDirectionsResponse.Summary summary = response.getRoute().getTrafast().get(0).getSummary();
+                if (summary != null) {
+                    double distanceInKm = summary.getDistance() / 1000.0;
+                    log.info("거리 계산 완료: {} km", distanceInKm);
+                    return distanceInKm;
+                }
+            }
+            log.warn("Naver Directions API 응답에서 경로 또는 요약 정보를 찾을 수 없습니다.");
+            return null;
+        }).orElseGet(() -> {
+            log.error("Naver Directions API 호출 실패 또는 응답 없음.");
+            return null;
+        });
+    }
+
+
+
+    /**
+     * [남은 경로 계산] 차주의 현재 위치부터 목적지까지의 남은 예상 시간과 거리를 계산합니다.
+     * ETA는 '현재 시간'을 기준으로 계산됩니다.
      *
      * @param shipment 운송 정보 엔티티 (현재 위치, 목적지, 경유지 정보 포함)
      * @param response 상세 응답 DTO (ETA 및 거리 정보가 업데이트될 대상)
      */
-    private void calculateEtaAndDistance(Shipment shipment, ShipmentDetailResponse response) {
-        // 1. 필수 좌표 유효성 검사: 현재 위치 또는 목적지 좌표가 없으면 ETA 계산을 중단하고 경고 로그를 남김
+    private void calculateRemainingEtaAndDistance(Shipment shipment, ShipmentDetailResponse response) {
         if (shipment.getCurrentLocationPoint() == null || shipment.getDropoffPoint() == null) {
             log.warn("운송건 ID {}: 필수 좌표(현재위치 또는 목적지)가 누락되어 ETA를 계산할 수 없습니다.", shipment.getShipmentId());
-            response.setDistanceToDestination("좌표 누락");
+            response.setDistanceToDestination(null);
             return;
         }
 
-        // 2. 좌표 문자열 변환: JTS Point 객체를 Naver API 요청 형식인 "경도,위도" 문자열로 변환
         String start = shipment.getCurrentLocationPoint().getX() + "," + shipment.getCurrentLocationPoint().getY();
         String goal = shipment.getDropoffPoint().getX() + "," + shipment.getDropoffPoint().getY();
 
@@ -179,37 +278,33 @@ public class ShipmentServiceImpl implements ShipmentService {
             waypoints.add(shipment.getWaypoint2Point().getX() + "," + shipment.getWaypoint2Point().getY());
         }
 
-        log.info("Naver Directions API 호출 - 출발지: {}, 목적지: {}, 경유지: {}", start, goal, waypoints);
+        log.info("Naver Directions API 호출 (남은 경로) - 출발지: {}, 목적지: {}, 경유지: {}", start, goal, waypoints);
 
-        // 3. Naver Directions API 호출: 변환된 좌표와 경유지를 사용하여 길 안내 API 요청
         Optional<NaverDirectionsResponse> directionsResponseOptional = naverDirectionsApiClient.getDirections(start, goal, waypoints);
 
-        // 4. API 응답 처리:
-        //    - 응답이 존재하면 경로 요약 정보(거리, 소요 시간)를 추출하여 DTO에 설정
-        //    - 예상 도착 시간은 현재 서버 시간과 API로부터 받은 소요 시간을 합산하여 계산
-        //    - 응답이 없거나 경로 정보가 불완전하면 경고 로그를 남기고 DTO에 오류 메시지 설정
-        if (directionsResponseOptional.isPresent()) {
-            NaverDirectionsResponse directionsResponse = directionsResponseOptional.get();
-            if (directionsResponse.getRoute() != null && directionsResponse.getRoute().getTrafast() != null && !directionsResponse.getRoute().getTrafast().isEmpty()) {
-                NaverDirectionsResponse.Summary summary = directionsResponse.getRoute().getTrafast().get(0).getSummary();
-
-                if (summary != null) {
-                    response.setDistanceToDestination(String.format("%.1f km", summary.getDistance() / 1000.0));
-                    long durationSeconds = summary.getDuration() / 1000;
-                    response.setEstimatedArrivalTime(LocalDateTime.now().plusSeconds(durationSeconds));
-                    log.info("ETA 계산 완료: 거리 {}, 소요시간 {}초", response.getDistanceToDestination(), durationSeconds);
-                } else {
-                    log.warn("Naver Directions API Summary 정보가 없습니다. (Shipment ID: {})", shipment.getShipmentId());
-                    response.setDistanceToDestination("경로 요약 없음");
+        directionsResponseOptional.ifPresentOrElse(
+                directionsResponse -> {
+                    if (directionsResponse.getRoute() != null && directionsResponse.getRoute().getTrafast() != null && !directionsResponse.getRoute().getTrafast().isEmpty()) {
+                        NaverDirectionsResponse.Summary summary = directionsResponse.getRoute().getTrafast().get(0).getSummary();
+                        if (summary != null) {
+                            response.setDistanceToDestination(String.format("%.1f", summary.getDistance() / 1000.0));
+                            long durationSeconds = summary.getDuration() / 1000;
+                            response.setEstimatedArrivalTime(LocalDateTime.now().plusSeconds(durationSeconds));
+                            log.info("남은 경로 ETA 계산 완료: 거리 {}, 소요시간 {}초", response.getDistanceToDestination(), durationSeconds);
+                        } else {
+                            log.warn("Naver Directions API (남은 경로) Summary 정보가 없습니다. (Shipment ID: {})", shipment.getShipmentId());
+                            response.setDistanceToDestination(null);
+                        }
+                    } else {
+                        log.warn("Naver Directions API (남은 경로) 경로 정보가 없습니다. (Shipment ID: {})", shipment.getShipmentId());
+                        response.setDistanceToDestination(null);
+                    }
+                },
+                () -> {
+                    log.error("Naver Directions API (남은 경로) 호출 실패 또는 응답 없음. (Shipment ID: {})", shipment.getShipmentId());
+                    response.setDistanceToDestination(null);
                 }
-            } else {
-                log.warn("Naver Directions API 경로 정보가 없습니다. (Shipment ID: {})", shipment.getShipmentId());
-                response.setDistanceToDestination("경로 없음");
-            }
-        } else {
-            log.error("Naver Directions API 호출 실패 또는 응답 없음. (Shipment ID: {})", shipment.getShipmentId());
-            response.setDistanceToDestination("계산 오류");
-        }
+        );
     }
 
     /**
@@ -243,9 +338,13 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .waypoint1Address(shipment.getWaypoint1Address())
                 .waypoint2Address(shipment.getWaypoint2Address())
                 .dropoffAddress(shipment.getDropoffAddress())
+                .pickupDesiredAt(shipment.getPickupDesiredAt())
+                .dropoffDesiredAt(shipment.getDropoffDesiredAt())
                 .cargoType(shipment.getCargoType())
                 .cargoVolume(shipment.getCargoVolume())
                 .cargoWeight(shipment.getCargoWeight())
+                .vehicleType(shipment.getVehicleType())
+                .description(shipment.getDescription())
                 .price(shipment.getPrice())
                 .platformFee(shipment.getPlatformFee())
                 .profit(shipment.getProfit())
@@ -564,6 +663,30 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .dropoffDesiredAt(shipment.getDropoffDesiredAt())
                 .pickupAddress(shipment.getPickupAddress())
                 .dropoffAddress(shipment.getDropoffAddress())
+                .profit(shipment.getProfit())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UnassignedShipmentResponse> getUnassignedShipments() {
+        List<Shipment> shipments = shipmentRepository.findByShipmentStatusOrderByCreatedAtDesc(ShipmentStatus.REQUESTED);
+        return shipments.stream()
+                .map(this::toUnassignedShipmentResponse)
+                .collect(Collectors.toList());
+    }
+
+    private UnassignedShipmentResponse toUnassignedShipmentResponse(Shipment shipment) {
+        return UnassignedShipmentResponse.builder()
+                .shipmentId(shipment.getShipmentId())
+                .pickupAddress(shipment.getPickupAddress())
+                .dropoffAddress(shipment.getDropoffAddress())
+                .pickupDesiredAt(shipment.getPickupDesiredAt())
+                .dropoffDesiredAt(shipment.getDropoffDesiredAt())
+                .estimatedDistance(shipment.getEstimatedDistance())
+                .cargoWeight(shipment.getCargoWeight())
+                .vehicleType(shipment.getVehicleType().getDescription())
+                .description(shipment.getDescription())
                 .profit(shipment.getProfit())
                 .build();
     }

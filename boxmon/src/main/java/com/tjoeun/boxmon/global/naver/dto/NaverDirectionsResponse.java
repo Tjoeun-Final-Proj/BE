@@ -10,14 +10,8 @@ import java.util.List;
 public class NaverDirectionsResponse {
     private String code;
     private String message;
-    private CurrentDateTime currentDateTime;
+    private String currentDateTime;
     private Route route;
-
-    @Getter
-    @Setter
-    public static class CurrentDateTime {
-        private String value;
-    }
 
     @Getter
     @Setter

@@ -2,6 +2,7 @@ package com.tjoeun.boxmon.feature.shipment.dto;
 
 import com.tjoeun.boxmon.feature.shipment.domain.CargoType;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
+import com.tjoeun.boxmon.feature.user.domain.VehicleType;
 import lombok.*;
 import org.springframework.data.geo.Point;
 
@@ -33,7 +34,7 @@ public class ShipmentDetailResponse {
 
     // 3. 실시간 위치 및 Google Maps 정보
     private Point currentDriverPoint;       // 운송 기사(차량)의 최신 경위도 좌표 (지도 마커용)
-    private String distanceToDestination;    // 목적지까지 남은 거리 정보
+    private String distanceToDestination;    // 목적지까지 남은 거리 정보 (포맷팅된 문자열)
     private LocalDateTime estimatedArrivalTime; // 예상 도착 시간 (시스템 현재 시간 + 소요 시간)
 
     // 4. 주소 정보
@@ -42,19 +43,23 @@ public class ShipmentDetailResponse {
     private String waypoint2Address; // 두 번째 경유지 주소
     private String dropoffAddress; // 하차지 주소
 
-    // 5. 화물 및 차량 상세 정보
+    // 5. 시간 정보
+    private LocalDateTime pickupDesiredAt; // 화주 희망 상차 시간
+    private LocalDateTime dropoffDesiredAt; // 화주 희망 하차 시간
+
+    // 6. 화물 및 차량 상세 정보
     private CargoType cargoType;             // 화물 종류 (Enum, 프론트에서 code/description 모두 활용 가능)
     private String cargoVolume;              // 화물 부피 (예: 5미터 가구)
     private Double cargoWeight;              // 화물 중량 (예: 5.0 톤)
-    private String vehicleType;              // 배송에 사용되는 차종 (예: 윙바디)
+    private VehicleType vehicleType;         // 화주 희망 차량 종류 (Enum)
     private String description;              // 화물 특이사항
 
-    // 6. 금액 정보
+    // 7. 금액 정보
     private BigDecimal price;                // 총 운임 (화주 지불액)
     private BigDecimal platformFee;          // 플랫폼 수수료
     private BigDecimal profit;               // 운송 기사 수익 (운송료)
 
-    // 7. 정적 좌표
+    // 8. 정적 좌표
     private Point pickupPoint; // 상차지 경위도 좌표
     private Point dropoffPoint; // 하차지 경위도 좌표
 }

@@ -182,4 +182,6 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
+
+    List<Shipment> findByShipmentStatusOrderByCreatedAtDesc(ShipmentStatus shipmentStatus);
 }

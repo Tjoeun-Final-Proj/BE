@@ -2,6 +2,7 @@ package com.tjoeun.boxmon.feature.shipment.domain;
 
 import com.tjoeun.boxmon.feature.user.domain.Driver;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
+import com.tjoeun.boxmon.feature.user.domain.VehicleType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.locationtech.jts.geom.Point;
@@ -72,6 +73,9 @@ public class Shipment {
     @Column(name = "waypoint2_at")
     private LocalDateTime waypoint2At; // 두 번째 경유지 도착 시간
 
+    @Column(name = "estimated_distance")
+    private Double estimatedDistance; // 운송 예상 거리 (단위: km)
+
     // --- 비용 및 수익 ---
     @Column(name = "price", nullable = false)
     private BigDecimal price; // 총 운임 비용
@@ -96,6 +100,10 @@ public class Shipment {
 
     @Column(name = "cargo_volume")
     private String cargoVolume; // 화물 부피 (예: 1CBM)
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_type", nullable = false)
+    private VehicleType vehicleType; // 화주 희망 차량 종류
 
     @Column(name = "need_refrigerate", nullable = false)
     @Builder.Default
