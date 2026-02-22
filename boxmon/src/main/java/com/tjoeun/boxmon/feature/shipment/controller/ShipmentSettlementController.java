@@ -130,13 +130,13 @@ public class ShipmentSettlementController {
     }
 
     /**
-     * 정산 화면에서 사용되는 완료 배송 상세 조회
+     * 정산 완료 배송 상세 조회
      *
-     * @param authentication 인증 사용자 (선주 또는 기사)
+     * @param authentication 인증된 사용자(화주 또는 운송 기사)
      * @param shipmentId 조회할 배송 ID
-     * @return 정산용 배송 상세 DTO
+     * @return 정산 화면용 배송 상세 DTO (화물/하차 사진 URL 모두 포함)
      */
-    @Operation(summary = "정산 배송 상세 조회", description = "완료된 배송의 상세 내역(하차 사진 URL 포함)을 조회합니다.")
+    @Operation(summary = "정산 완료 배송 상세 조회", description = "완료된 배송의 상세 정보를 조회합니다. 화물 사진과 하차 사진 URL을 모두 반환합니다.")
     @ApiResponse(responseCode = "200", description = "정산 배송 상세 조회 성공",
             content = @Content(schema = @Schema(implementation = ShipmentDetailResponse.class)))
     @ApiResponse(responseCode = "401", description = "인증 실패")
