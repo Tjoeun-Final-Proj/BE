@@ -59,13 +59,48 @@ public class ShipmentServiceImpl implements ShipmentService {
     // GPS 표준 좌표계(WGS84)인 SRID 4326을 사용하도록 설정.
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
+    /**
+     * 차주 배차 수락 화면에서 사용하는 화물 상세 응답을 생성합니다.
+     * 해당 응답에서는 사진 URL을 제외합니다.
+     *
+     * @param shipmentId 조회 대상 화물 ID
+     * @return 사진 미포함 화물 상세 응답
+     */
     @Override
     @Transactional(readOnly = true)
     public ShipmentDetailResponse getShipmentAcceptDetail(Long shipmentId) {
         Shipment shipment = shipmentRepository.findById(shipmentId)
                 .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
 
-        return toDetailResponse(shipment);
+        return toDetailResponse(shipment, false, false);
+    }
+
+    /**
+     * 정산 화면에서 사용하는 화물 상세 응답을 생성합니다.
+     * 완료( DONE ) 상태의 화물만 조회되며, 운송 전·후 사진 URL을 함께 반환합니다.
+     *
+     * @param userId 요청자 ID
+     * @param shipmentId 조회 대상 화물 ID
+     * @return 권한이 있는 사용자에게 사진이 포함된 정산 상세 응답
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ShipmentDetailResponse getSettlementShipmentDetail(Long userId, Long shipmentId) {
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
+
+        if (shipment.getShipmentStatus() != ShipmentStatus.DONE) {
+            throw new ShipmentStateConflictException("Only completed shipments can be viewed in settlement detail.");
+        }
+
+        boolean isShipper = shipment.getShipper() != null && shipment.getShipper().getShipperId().equals(userId);
+        boolean isDriver = shipment.getDriver() != null && shipment.getDriver().getDriverId().equals(userId);
+
+        if (!isShipper && !isDriver) {
+            throw new RoleAccessDeniedException("Only shipment shipper or assigned driver can view this settlement detail.");
+        }
+
+        return toDetailResponse(shipment, true, true);
     }
 
     /**
@@ -203,6 +238,47 @@ public class ShipmentServiceImpl implements ShipmentService {
         }
     }
 
+    @Override
+    public void completeTransport(Long driverId, Long shipmentId, String dropoffPhotoUrl) {
+        validateDriverAccess(driverId);
+
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
+
+        if (shipment.getShipmentStatus() == ShipmentStatus.DONE) {
+            if (shipment.getDriver() == null || !shipment.getDriver().getDriverId().equals(driverId)) {
+                throw new RoleAccessDeniedException("Only assigned driver can complete this shipment.");
+            }
+            if (dropoffPhotoUrl != null && !dropoffPhotoUrl.isBlank()) {
+                shipment.setDropoffPhotoUrl(dropoffPhotoUrl);
+            }
+            shipmentRepository.save(shipment);
+            return;
+        }
+
+        if (shipment.getShipmentStatus() != ShipmentStatus.IN_TRANSIT) {
+            throw new ShipmentStateConflictException("Only shipments in IN_TRANSIT status can be completed.");
+        }
+
+        if (shipment.getDriver() == null || !shipment.getDriver().getDriverId().equals(driverId)) {
+            throw new RoleAccessDeniedException("Only assigned driver can complete this shipment.");
+        }
+
+        shipment.setDropoffAt(LocalDateTime.now());
+        shipment.setShipmentStatus(ShipmentStatus.DONE);
+        if (dropoffPhotoUrl != null && !dropoffPhotoUrl.isBlank()) {
+            shipment.setDropoffPhotoUrl(dropoffPhotoUrl);
+        }
+        shipment.setSettlementStatus(SettlementStatus.READY);
+        shipmentRepository.save(shipment);
+
+        try {
+            notificationUseCase.notifyTransportCompleted(shipmentId);
+        } catch (Exception e) {
+            log.warn("운송 완료는 성공했지만 알림 전송은 건너뜁니다. shipmentId={}", shipmentId, e);
+        }
+    }
+
     /**
      * 특정 운송(화물)의 상세 정보를 조회합니다.
      * 차주 배차 여부 및 위치 정보 유무에 따라 다른 기준으로 예상 도착 시간(ETA)과 거리를 계산합니다.
@@ -221,7 +297,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
 
         // 2. 기본 정보 DTO 변환
-        ShipmentDetailResponse response = toDetailResponse(shipment);
+        ShipmentDetailResponse response = toDetailResponse(shipment, false, false);
 
         // 3. ETA 및 거리 계산 분기 처리
         // 실시간 계산 조건: 차주가 배차되었고, 동시에 현재 위치 정보가 있는 경우
@@ -376,7 +452,7 @@ public class ShipmentServiceImpl implements ShipmentService {
      * @param shipment 변환할 Shipment 엔티티
      * @return 변환된 {@link ShipmentDetailResponse} DTO
      */
-    private ShipmentDetailResponse toDetailResponse(Shipment shipment) {
+    private ShipmentDetailResponse toDetailResponse(Shipment shipment, boolean includeCargoPhotoUrl, boolean includeDropoffPhotoUrl) {
         // 화물 번호 생성: [화물종류코드]-[생성일자(YYMMDD)]-[ShipmentId 마지막 3자리] 형식
         // 예: GEN-260212-001 (General Cargo, 26년 02월 12일, Shipment ID 끝 3자리 001)
         String shipmentNumber = String.format("%s-%s-%03d",
@@ -384,7 +460,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 shipment.getCreatedAt().format(DateTimeFormatter.ofPattern("yyMMdd")),
                 shipment.getShipmentId() % 1000);
 
-        return ShipmentDetailResponse.builder()
+        ShipmentDetailResponse.ShipmentDetailResponseBuilder builder = ShipmentDetailResponse.builder()
                 .shipmentId(shipment.getShipmentId())
                 .shipmentNumber(shipmentNumber)
                 .shipmentStatus(shipment.getShipmentStatus())
@@ -411,8 +487,16 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .platformFee(roundMoney(shipment.getPlatformFee()))
                 .profit(roundMoney(shipment.getProfit()))
                 .pickupPoint(convertToSpringPoint(shipment.getPickupPoint()))
-                .dropoffPoint(convertToSpringPoint(shipment.getDropoffPoint()))
-                .build();
+                .dropoffPoint(convertToSpringPoint(shipment.getDropoffPoint()));
+
+        if (includeCargoPhotoUrl) {
+            builder.cargoPhotoUrl(shipment.getCargoPhotoUrl());
+        }
+        if (includeDropoffPhotoUrl) {
+            builder.dropoffPhotoUrl(shipment.getDropoffPhotoUrl());
+        }
+
+        return builder.build();
     }
 
     /**

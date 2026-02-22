@@ -4,6 +4,7 @@ import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementListResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementSummaryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementListResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementSummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.service.ShipmentService;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -125,5 +127,29 @@ public class ShipmentSettlementController {
     public ResponseEntity<DriverSettlementSummaryResponse> getDriverSettlementSummary(Authentication authentication) {
         Long driverId = Long.valueOf(authentication.getPrincipal().toString());
         return ResponseEntity.ok(shipmentService.getDriverSettlementSummary(driverId));
+    }
+
+    /**
+     * 정산 완료 배송 상세 조회
+     *
+     * @param authentication 인증된 사용자(화주 또는 운송 기사)
+     * @param shipmentId 조회할 배송 ID
+     * @return 정산 화면용 배송 상세 DTO (화물/하차 사진 URL 모두 포함)
+     */
+    @Operation(summary = "정산 완료 배송 상세 조회", description = "완료된 배송의 상세 정보를 조회합니다. 화물 사진과 하차 사진 URL을 모두 반환합니다.")
+    @ApiResponse(responseCode = "200", description = "정산 배송 상세 조회 성공",
+            content = @Content(schema = @Schema(implementation = ShipmentDetailResponse.class)))
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "조회 권한이 없습니다.")
+    @ApiResponse(responseCode = "404", description = "배송을 찾을 수 없습니다.")
+    @ApiResponse(responseCode = "409", description = "완료되지 않은 배송은 조회할 수 없습니다.")
+    @GetMapping("/detail/{shipmentId}")
+    public ResponseEntity<ShipmentDetailResponse> getSettlementShipmentDetail(
+            Authentication authentication,
+            @PathVariable(name = "shipmentId") Long shipmentId
+    ) {
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        ShipmentDetailResponse response = shipmentService.getSettlementShipmentDetail(userId, shipmentId);
+        return ResponseEntity.ok(response);
     }
 }
