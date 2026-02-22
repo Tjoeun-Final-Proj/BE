@@ -170,6 +170,39 @@ public class ShipmentServiceImpl implements ShipmentService {
         }
     }
 
+    @Override
+    public void startTransport(Long driverId, Long shipmentId) {
+        validateDriverAccess(driverId);
+
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
+
+        if (shipment.getShipmentStatus() == ShipmentStatus.IN_TRANSIT) {
+            if (shipment.getDriver() == null || !shipment.getDriver().getDriverId().equals(driverId)) {
+                throw new RoleAccessDeniedException("Only assigned driver can start this shipment.");
+            }
+            return;
+        }
+
+        if (shipment.getShipmentStatus() != ShipmentStatus.ASSIGNED) {
+            throw new ShipmentStateConflictException("Only shipments in ASSIGNED status can be started.");
+        }
+
+        if (shipment.getDriver() == null || !shipment.getDriver().getDriverId().equals(driverId)) {
+            throw new RoleAccessDeniedException("Only assigned driver can start this shipment.");
+        }
+
+        shipment.setPickupAt(LocalDateTime.now());
+        shipment.setShipmentStatus(ShipmentStatus.IN_TRANSIT);
+        shipmentRepository.save(shipment);
+
+        try {
+            notificationUseCase.notifyTransportStarted(shipmentId);
+        } catch (Exception e) {
+            log.warn("운송 시작은 성공했지만 알림 전송은 건너뜁니다. shipmentId={}", shipmentId, e);
+        }
+    }
+
     /**
      * 특정 운송(화물)의 상세 정보를 조회합니다.
      * 차주 배차 여부 및 위치 정보 유무에 따라 다른 기준으로 예상 도착 시간(ETA)과 거리를 계산합니다.
@@ -725,4 +758,3 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .build();
     }
 }
-
