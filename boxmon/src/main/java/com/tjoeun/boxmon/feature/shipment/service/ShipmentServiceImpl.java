@@ -163,7 +163,11 @@ public class ShipmentServiceImpl implements ShipmentService {
         shipment.setShipmentStatus(ShipmentStatus.ASSIGNED);
         shipmentRepository.save(shipment);
 
-        notificationUseCase.notifyAssignmentCompleted(shipmentId);
+        try {
+            notificationUseCase.notifyAssignmentCompleted(shipmentId);
+        } catch (Exception e) {
+            log.warn("배차 수락은 성공했지만 알림 전송은 건너뜁니다. shipmentId={}", shipmentId, e);
+        }
     }
 
     /**
