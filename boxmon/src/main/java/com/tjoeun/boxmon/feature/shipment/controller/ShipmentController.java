@@ -27,7 +27,7 @@ import java.util.List;
 
 /**
  * 배송 관련 API 요청을 처리하는 컨트롤러 클래스입니다.
- * 배송 생성 및 상세 정보 조회를 담당합니다.
+ * 배송 생성, 상세 조회, 미배차 목록 조회를 담당합니다.
  */
 @Tag(name = "배송", description = "배송 생성 및 조회 관련 API")
 @RestController
@@ -75,7 +75,7 @@ public class ShipmentController {
     public ResponseEntity<ShipmentDetailResponse> getShipmentDetail(
             @Parameter(description = "배송 ID", example = "1") @PathVariable(name = "shipmentId") Long shipmentId
     ) {
-        // Service computes ETA/distance when current driver location exists.
+        // 서비스에서 운송 기사 현재 위치 존재 여부에 따라 ETA/거리 계산 분기를 처리합니다.
         ShipmentDetailResponse response = shipmentService.getShipmentDetail(shipmentId);
         return ResponseEntity.ok(response);
     }

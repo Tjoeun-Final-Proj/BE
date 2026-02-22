@@ -37,7 +37,7 @@ import java.util.stream.Collectors; // 스트림 API 컬렉터
 
 /**
  * 운송(Shipment) 관련 비즈니스 로직을 처리하는 서비스 구현체.
- * 화물 생성, 목록 조회, 상세 조회 및 Google Maps API를 이용한 ETA 계산 등의 기능을 제공합니다.
+ * 화물 생성, 목록 조회, 상세 조회 및 Naver Directions API를 이용한 ETA 계산 등의 기능을 제공합니다.
  */
 @Slf4j
 @Service
@@ -88,7 +88,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 Optional.ofNullable(waypoint1Point), Optional.ofNullable(waypoint2Point));
 
 
-        // 3. 배송 초기 상태 및 비용 계산:
+        // 4. 배송 초기 상태 및 비용 계산:
         //    - 배송 상태를 '요청됨'으로 초기화
         //    - 요청된 운임을 기반으로 플랫폼 수수료 (10%) 및 운송 기사 수익 계산
         //    - TODO: 수수료율은 현재 하드코딩되어 있으며, 추후 시스템 설정 테이블에서 관리하도록 변경 예정
@@ -97,7 +97,7 @@ public class ShipmentServiceImpl implements ShipmentService {
         BigDecimal platformFee = price.multiply(BigDecimal.valueOf(0.1)).setScale(0, RoundingMode.HALF_UP);
         BigDecimal profit = price.subtract(platformFee).setScale(0, RoundingMode.HALF_UP);
 
-        // 4. Shipment 엔티티 빌드 및 생성: 요청 데이터를 기반으로 Shipment 엔티티를 생성
+        // 5. Shipment 엔티티 빌드 및 생성: 요청 데이터를 기반으로 Shipment 엔티티를 생성
         Shipment shipment = Shipment.builder()
                 .shipper(shipper)
                 .pickupPoint(pickupPoint)
@@ -126,7 +126,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .settlementStatus(SettlementStatus.INELIGIBLE) // 초기 정산 상태는 '정산 대상 아님'
                 .build();
 
-        // 5. 생성된 Shipment 엔티티를 데이터베이스에 저장
+        // 6. 생성된 Shipment 엔티티를 데이터베이스에 저장
         shipmentRepository.save(shipment);
     }
 
