@@ -203,6 +203,47 @@ public class ShipmentServiceImpl implements ShipmentService {
         }
     }
 
+    @Override
+    public void completeTransport(Long driverId, Long shipmentId, String dropoffPhotoUrl) {
+        validateDriverAccess(driverId);
+
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
+
+        if (shipment.getShipmentStatus() == ShipmentStatus.DONE) {
+            if (shipment.getDriver() == null || !shipment.getDriver().getDriverId().equals(driverId)) {
+                throw new RoleAccessDeniedException("Only assigned driver can complete this shipment.");
+            }
+            if (dropoffPhotoUrl != null && !dropoffPhotoUrl.isBlank()) {
+                shipment.setDropoffPhotoUrl(dropoffPhotoUrl);
+            }
+            shipmentRepository.save(shipment);
+            return;
+        }
+
+        if (shipment.getShipmentStatus() != ShipmentStatus.IN_TRANSIT) {
+            throw new ShipmentStateConflictException("Only shipments in IN_TRANSIT status can be completed.");
+        }
+
+        if (shipment.getDriver() == null || !shipment.getDriver().getDriverId().equals(driverId)) {
+            throw new RoleAccessDeniedException("Only assigned driver can complete this shipment.");
+        }
+
+        shipment.setDropoffAt(LocalDateTime.now());
+        shipment.setShipmentStatus(ShipmentStatus.DONE);
+        if (dropoffPhotoUrl != null && !dropoffPhotoUrl.isBlank()) {
+            shipment.setDropoffPhotoUrl(dropoffPhotoUrl);
+        }
+        shipment.setSettlementStatus(SettlementStatus.READY);
+        shipmentRepository.save(shipment);
+
+        try {
+            notificationUseCase.notifyTransportCompleted(shipmentId);
+        } catch (Exception e) {
+            log.warn("운송 완료는 성공했지만 알림 전송은 건너뜁니다. shipmentId={}", shipmentId, e);
+        }
+    }
+
     /**
      * 특정 운송(화물)의 상세 정보를 조회합니다.
      * 차주 배차 여부 및 위치 정보 유무에 따라 다른 기준으로 예상 도착 시간(ETA)과 거리를 계산합니다.
@@ -412,6 +453,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .profit(roundMoney(shipment.getProfit()))
                 .pickupPoint(convertToSpringPoint(shipment.getPickupPoint()))
                 .dropoffPoint(convertToSpringPoint(shipment.getDropoffPoint()))
+                .dropoffPhotoUrl(shipment.getDropoffPhotoUrl())
                 .build();
     }
 

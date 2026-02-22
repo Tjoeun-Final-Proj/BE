@@ -38,6 +38,17 @@ public interface ShipmentService {
     void startTransport(Long driverId, Long shipmentId);
 
     /**
+     * 드라이버가 배차를 완료 처리합니다.
+     * IN_TRANSIT 상태에서만 완료 처리할 수 있습니다.
+     * 완료 시 하차 사진 URL(예: AWS S3 업로드 URL)을 저장합니다.
+     *
+     * @param driverId 배차된 드라이버 ID
+     * @param shipmentId 배송 ID
+     * @param dropoffPhotoUrl 하차 완료 사진 URL(미연결 상태에서는 null 허용)
+     */
+    void completeTransport(Long driverId, Long shipmentId, String dropoffPhotoUrl);
+
+    /**
      * 특정 배송의 상세 정보를 조회합니다. 예상 도착 시간 및 실시간 위치 정보가 포함될 수 있습니다.
      * @param shipmentId 배송 고유 식별자
      * @return 배송 상세 응답 DTO

@@ -61,4 +61,5 @@ public class ShipmentDetailResponse {
     // 8. 정적 좌표
     private Point pickupPoint; // 상차지 경위도 좌표
     private Point dropoffPoint; // 하차지 경위도 좌표
+    private String dropoffPhotoUrl;
 }
