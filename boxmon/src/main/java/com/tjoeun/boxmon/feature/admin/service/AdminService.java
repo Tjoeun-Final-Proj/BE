@@ -10,11 +10,12 @@ import com.tjoeun.boxmon.feature.admin.domain.Admin;
 import com.tjoeun.boxmon.feature.admin.dto.AdminLogin;
 import com.tjoeun.boxmon.feature.admin.dto.AdminRequest;
 import com.tjoeun.boxmon.feature.admin.repository.AdminRepository;
-import com.tjoeun.boxmon.feature.user.domain.User;
-import com.tjoeun.boxmon.feature.user.dto.LoginResponse;
 import com.tjoeun.boxmon.security.jwt.JwtProvider;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class AdminService {
@@ -62,5 +63,18 @@ public class AdminService {
         String refreshToken = jwtProvider.createRefreshToken(admin.getAdminId());
 
         return new AdminLogin(accessToken, refreshToken);
+    }
+
+    // 이름 출력
+    public String getName(Long adminId){
+        Admin admin = adminRepository.findByAdminId(adminId)
+                .orElseThrow();
+        return admin.getName();
+    }
+
+    //관리자 목록 조회
+    public List<Admin> getAdminList() {
+        List<Admin> admins = adminRepository.findAll();
+        return admins;
     }
 }
