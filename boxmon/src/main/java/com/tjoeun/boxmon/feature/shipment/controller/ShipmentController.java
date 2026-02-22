@@ -82,6 +82,30 @@ public class ShipmentController {
     }
 
     /**
+     * 배차된 배송의 운송 시작 처리
+     * 배차된 건을 IN_TRANSIT로 변경합니다.
+     *
+     * @param authentication 인증된 운송 기사
+     * @param shipmentId 배송 ID
+     */
+    @Operation(summary = "운송 시작", description = "배차된 배송을 출발 처리(IN_TRANSIT)합니다.")
+    @ApiResponse(responseCode = "204", description = "운송 시작 처리 완료")
+    @ApiResponse(responseCode = "400", description = "잘못된 요청")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "권한 없음")
+    @ApiResponse(responseCode = "404", description = "배송을 찾을 수 없음")
+    @ApiResponse(responseCode = "409", description = "요청 상태가 유효하지 않음")
+    @PostMapping("/{shipmentId}/start")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void startTransport(
+            Authentication authentication,
+            @Parameter(description = "배송 ID", example = "1") @PathVariable(name = "shipmentId") Long shipmentId
+    ) {
+        Long driverId = Long.valueOf(authentication.getPrincipal().toString());
+        shipmentService.startTransport(driverId, shipmentId);
+    }
+
+    /**
      * 특정 배송의 상세 정보를 조회합니다.
      * 화주/운송 기사 상세 화면에 필요한 정보를 제공합니다.
      *

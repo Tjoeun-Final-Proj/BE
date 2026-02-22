@@ -29,6 +29,15 @@ public interface ShipmentService {
     void acceptShipment(Long driverId, Long shipmentId);
 
     /**
+     * 배차된 배송 건의 운송을 시작합니다.
+     * ASSIGNED 상태만 IN_TRANSIT로 상태 전이를 허용합니다.
+     *
+     * @param driverId 운송 기사 ID
+     * @param shipmentId 배송 ID
+     */
+    void startTransport(Long driverId, Long shipmentId);
+
+    /**
      * 특정 배송의 상세 정보를 조회합니다. 예상 도착 시간 및 실시간 위치 정보가 포함될 수 있습니다.
      * @param shipmentId 배송 고유 식별자
      * @return 배송 상세 응답 DTO
