@@ -59,6 +59,13 @@ public class ShipmentServiceImpl implements ShipmentService {
     // GPS 표준 좌표계(WGS84)인 SRID 4326을 사용하도록 설정.
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
+    /**
+     * 차주 배차 수락 화면에서 사용하는 화물 상세 응답을 생성합니다.
+     * 해당 응답에서는 사진 URL을 제외합니다.
+     *
+     * @param shipmentId 조회 대상 화물 ID
+     * @return 사진 미포함 화물 상세 응답
+     */
     @Override
     @Transactional(readOnly = true)
     public ShipmentDetailResponse getShipmentAcceptDetail(Long shipmentId) {
@@ -68,6 +75,14 @@ public class ShipmentServiceImpl implements ShipmentService {
         return toDetailResponse(shipment, false, false);
     }
 
+    /**
+     * 정산 화면에서 사용하는 화물 상세 응답을 생성합니다.
+     * 완료( DONE ) 상태의 화물만 조회되며, 운송 전·후 사진 URL을 함께 반환합니다.
+     *
+     * @param userId 요청자 ID
+     * @param shipmentId 조회 대상 화물 ID
+     * @return 권한이 있는 사용자에게 사진이 포함된 정산 상세 응답
+     */
     @Override
     @Transactional(readOnly = true)
     public ShipmentDetailResponse getSettlementShipmentDetail(Long userId, Long shipmentId) {
