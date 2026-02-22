@@ -62,6 +62,15 @@ public interface ShipmentService {
      */
     ShipmentDetailResponse getShipmentAcceptDetail(Long shipmentId);
 
+    /**
+     * 정산 관리용 완료된 배송 상세 조회
+     *
+     * @param userId    요청 사용자 ID (선주 또는 기사)
+     * @param shipmentId 조회 대상 배송 ID
+     * @return 정산 화면에 표시할 배송 상세 DTO
+     */
+    ShipmentDetailResponse getSettlementShipmentDetail(Long userId, Long shipmentId);
+
     List<UnassignedShipmentResponse> getUnassignedShipments();
 
     /**

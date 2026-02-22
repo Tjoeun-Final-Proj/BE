@@ -65,7 +65,27 @@ public class ShipmentServiceImpl implements ShipmentService {
         Shipment shipment = shipmentRepository.findById(shipmentId)
                 .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
 
-        return toDetailResponse(shipment);
+        return toDetailResponse(shipment, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShipmentDetailResponse getSettlementShipmentDetail(Long userId, Long shipmentId) {
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
+
+        if (shipment.getShipmentStatus() != ShipmentStatus.DONE) {
+            throw new ShipmentStateConflictException("Only completed shipments can be viewed in settlement detail.");
+        }
+
+        boolean isShipper = shipment.getShipper() != null && shipment.getShipper().getShipperId().equals(userId);
+        boolean isDriver = shipment.getDriver() != null && shipment.getDriver().getDriverId().equals(userId);
+
+        if (!isShipper && !isDriver) {
+            throw new RoleAccessDeniedException("Only shipment shipper or assigned driver can view this settlement detail.");
+        }
+
+        return toDetailResponse(shipment, true);
     }
 
     /**
@@ -262,7 +282,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
 
         // 2. 기본 정보 DTO 변환
-        ShipmentDetailResponse response = toDetailResponse(shipment);
+        ShipmentDetailResponse response = toDetailResponse(shipment, false);
 
         // 3. ETA 및 거리 계산 분기 처리
         // 실시간 계산 조건: 차주가 배차되었고, 동시에 현재 위치 정보가 있는 경우
@@ -417,7 +437,7 @@ public class ShipmentServiceImpl implements ShipmentService {
      * @param shipment 변환할 Shipment 엔티티
      * @return 변환된 {@link ShipmentDetailResponse} DTO
      */
-    private ShipmentDetailResponse toDetailResponse(Shipment shipment) {
+    private ShipmentDetailResponse toDetailResponse(Shipment shipment, boolean includeDropoffPhotoUrl) {
         // 화물 번호 생성: [화물종류코드]-[생성일자(YYMMDD)]-[ShipmentId 마지막 3자리] 형식
         // 예: GEN-260212-001 (General Cargo, 26년 02월 12일, Shipment ID 끝 3자리 001)
         String shipmentNumber = String.format("%s-%s-%03d",
@@ -425,7 +445,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 shipment.getCreatedAt().format(DateTimeFormatter.ofPattern("yyMMdd")),
                 shipment.getShipmentId() % 1000);
 
-        return ShipmentDetailResponse.builder()
+        ShipmentDetailResponse.ShipmentDetailResponseBuilder builder = ShipmentDetailResponse.builder()
                 .shipmentId(shipment.getShipmentId())
                 .shipmentNumber(shipmentNumber)
                 .shipmentStatus(shipment.getShipmentStatus())
@@ -452,9 +472,13 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .platformFee(roundMoney(shipment.getPlatformFee()))
                 .profit(roundMoney(shipment.getProfit()))
                 .pickupPoint(convertToSpringPoint(shipment.getPickupPoint()))
-                .dropoffPoint(convertToSpringPoint(shipment.getDropoffPoint()))
-                .dropoffPhotoUrl(shipment.getDropoffPhotoUrl())
-                .build();
+                .dropoffPoint(convertToSpringPoint(shipment.getDropoffPoint()));
+
+        if (includeDropoffPhotoUrl) {
+            builder.dropoffPhotoUrl(shipment.getDropoffPhotoUrl());
+        }
+
+        return builder.build();
     }
 
     /**
