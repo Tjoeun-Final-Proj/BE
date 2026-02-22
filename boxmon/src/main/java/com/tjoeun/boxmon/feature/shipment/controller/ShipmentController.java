@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,10 +20,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -111,11 +109,11 @@ public class ShipmentController {
     /**
      * 배송 완료 API
      * 배송 건을 IN_TRANSIT 상태에서 DONE 상태로 변경합니다.
-     * 하차 사진은 연결 전에는 주석 샘플로만 표기합니다.
+     * 하차 사진은 URL 문자열로 전달받아 저장 대상에 반영합니다.
      *
      * @param authentication 인증된 드라이버
      * @param shipmentId 배송 ID
-     * @param dropoffPhoto 하차 완료 사진(연결 전에는 null 처리)
+     * @param dropoffPhotoUrl 하차 완료 사진 URL (현재는 URL 문자열만 입력)
      */
     @Operation(summary = "배송 완료 처리", description = "배송 완료 처리(IN_TRANSIT -> DONE)")
     @ApiResponse(responseCode = "204", description = "배송 완료 처리 성공")
@@ -124,25 +122,16 @@ public class ShipmentController {
     @ApiResponse(responseCode = "403", description = "권한 없음")
     @ApiResponse(responseCode = "404", description = "배송을 찾을 수 없음")
     @ApiResponse(responseCode = "409", description = "상태 전환 불가")
-    @PostMapping(value = "/{shipmentId}/complete", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping("/{shipmentId}/complete")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void completeTransport(
             Authentication authentication,
             @Parameter(description = "배송 ID", example = "1") @PathVariable(name = "shipmentId") Long shipmentId,
-            @RequestPart(value = "dropoffPhoto", required = false) MultipartFile dropoffPhoto
+            @Parameter(description = "하차 완료 사진 URL", required = false) @RequestParam(name = "dropoffPhotoUrl", required = false) String dropoffPhotoUrl
     ) {
         Long driverId = Long.valueOf(authentication.getPrincipal().toString());
 
-        // S3 연동 샘플 코드 (실제 연동 전 주석)
-        // String dropoffPhotoUrl = null;
-        // if (dropoffPhoto != null && !dropoffPhoto.isEmpty()) {
-        //     // ex) String objectKey = String.format("shipment/%d/dropoff/%s", shipmentId, UUID.randomUUID());
-        //     // ex) s3Uploader.upload(dropoffPhoto, objectKey);
-        //     // dropoffPhotoUrl = s3Uploader.getPublicUrl(objectKey);
-        // }
-        String dropoffPhotoUrl = null;
-
-        // 현재 S3 미연결 상태이므로 업로드를 수행하지 않고 null 처리합니다.
+        // S3 연동 샘플 코드는 보류 상태이며 현재는 URL 문자열 수신값만 사용합니다.
         shipmentService.completeTransport(driverId, shipmentId, dropoffPhotoUrl);
     }
 
