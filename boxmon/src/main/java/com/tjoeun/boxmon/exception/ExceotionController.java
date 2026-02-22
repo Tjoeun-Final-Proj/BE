@@ -10,24 +10,35 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class ExceotionController {
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<String> handler1(UserNotFoundException e){
+    public ResponseEntity<String> handler1(UserNotFoundException e) {
         e.printStackTrace();
-        return ResponseEntity.badRequest().body("이메일 다시 확인");
+        return ResponseEntity.badRequest().body("?대찓???ㅼ떆 ?뺤씤");
     }
-    
+
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> illegalArgumentHandler(IllegalArgumentException e){
+    public ResponseEntity<String> illegalArgumentHandler(IllegalArgumentException e) {
         e.printStackTrace();
         return ResponseEntity.badRequest().body(e.getMessage());
     }
-    
+
     @ExceptionHandler(ExternalServiceException.class)
-    public ResponseEntity<String> externalServiceException(ExternalServiceException e){
+    public ResponseEntity<String> externalServiceException(ExternalServiceException e) {
         log.error(e.getMessage());
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("서버가 외부와의 통신에 실패했습니다. 관리자에게 문의해주세요.");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("?쒕쾭媛 ?몃?????듭떊???ㅽ뙣?덉뒿?덈떎. 愿由ъ옄?먭쾶 臾몄쓽?댁＜?몄슂.");
     }
+
+    @ExceptionHandler(ShipmentNotFoundException.class)
+    public ResponseEntity<String> shipmentNotFoundException(ShipmentNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    }
+
+    @ExceptionHandler(ShipmentStateConflictException.class)
+    public ResponseEntity<String> shipmentStateConflictException(ShipmentStateConflictException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+    }
+
     @ExceptionHandler(RoleAccessDeniedException.class)
-    public ResponseEntity<String> roleAccessDeniedException(RoleAccessDeniedException e){
+    public ResponseEntity<String> roleAccessDeniedException(RoleAccessDeniedException e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
     }
 }

@@ -2,12 +2,15 @@ package com.tjoeun.boxmon.feature.shipment.service;
 
 import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.exception.RoleAccessDeniedException;
-import com.tjoeun.boxmon.exception.UserNotFoundException; // createShipment에서 UserNotFoundException을 사용하고 있으므로 유지
+import com.tjoeun.boxmon.exception.ShipmentStateConflictException;
+import com.tjoeun.boxmon.exception.UserNotFoundException;
 import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.*;
+import com.tjoeun.boxmon.feature.notification.service.NotificationUseCase;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
+import com.tjoeun.boxmon.feature.user.domain.Driver;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
 import com.tjoeun.boxmon.feature.user.repository.DriverRepository;
 import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
@@ -49,6 +52,7 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final ShipmentRepository shipmentRepository;
     private final ShipperRepository shipperRepository;
     private final DriverRepository driverRepository;
+    private final NotificationUseCase notificationUseCase;
     private final NaverDirectionsApiClient naverDirectionsApiClient;
 
     // JTS(Java Topology Suite) 지오메트리 객체 생성을 위한 팩토리.
@@ -128,6 +132,38 @@ public class ShipmentServiceImpl implements ShipmentService {
 
         // 6. 생성된 Shipment 엔티티를 데이터베이스에 저장
         shipmentRepository.save(shipment);
+    }
+
+    /**
+     * 배차 상태의 요청 건을 배차 기사에게 할당하고 배차 완료 상태로 변경합니다.
+     *
+     * @param driverId 배차 기사 ID
+     * @param shipmentId 배차 대상 배송 ID
+     */
+    @Override
+    public void acceptShipment(Long driverId, Long shipmentId) {
+        validateDriverAccess(driverId);
+
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
+
+        if (shipment.getShipmentStatus() != ShipmentStatus.REQUESTED) {
+            throw new ShipmentStateConflictException("Only shipments in REQUESTED status can be accepted.");
+        }
+
+        if (shipment.getDriver() != null) {
+            throw new ShipmentStateConflictException("Shipment already assigned.");
+        }
+
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new RoleAccessDeniedException("Driver access required."));
+
+        shipment.setDriver(driver);
+        shipment.setAcceptedAt(LocalDateTime.now());
+        shipment.setShipmentStatus(ShipmentStatus.ASSIGNED);
+        shipmentRepository.save(shipment);
+
+        notificationUseCase.notifyAssignmentCompleted(shipmentId);
     }
 
     /**
@@ -685,3 +721,4 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .build();
     }
 }
+

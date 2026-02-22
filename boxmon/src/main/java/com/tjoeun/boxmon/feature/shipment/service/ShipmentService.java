@@ -21,6 +21,14 @@ public interface ShipmentService {
     void createShipment(Long shipperId, ShipmentCreateRequest request);
 
     /**
+     * 배차를 수락하여 요청 건에 배차 기사 정보를 부여하고 상태를 배차 완료로 변경합니다.
+     *
+     * @param driverId 배차 기사 ID
+     * @param shipmentId 배차 대상 배송 ID
+     */
+    void acceptShipment(Long driverId, Long shipmentId);
+
+    /**
      * 특정 배송의 상세 정보를 조회합니다. 예상 도착 시간 및 실시간 위치 정보가 포함될 수 있습니다.
      * @param shipmentId 배송 고유 식별자
      * @return 배송 상세 응답 DTO
@@ -84,3 +92,4 @@ public interface ShipmentService {
             SettlementStatus settlementStatus
     );
 }
+
