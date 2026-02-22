@@ -3,6 +3,7 @@ package com.tjoeun.boxmon.feature.user.service;
 import com.tjoeun.boxmon.exception.DuplicateEmailException;
 import com.tjoeun.boxmon.exception.InvalidPasswordException;
 import com.tjoeun.boxmon.exception.UserNotFoundException;
+import com.tjoeun.boxmon.feature.admin.domain.Admin;
 import com.tjoeun.boxmon.feature.user.domain.Driver;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
 import com.tjoeun.boxmon.feature.user.domain.User;
@@ -14,8 +15,12 @@ import com.tjoeun.boxmon.feature.user.repository.UserRepository;
 
 import com.tjoeun.boxmon.security.jwt.JwtProvider;
 import jakarta.transaction.Transactional;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
 
 
 @Service
@@ -133,6 +138,12 @@ public class UserService {
         user.setPhone(request.getAccountNumber());
         user.setBusinessNumber(request.getHolderName());
         userRepository.save(user);
+    }
+
+    // 사용자 정보 조회
+    public List<User> getUserList() {
+        List<User> users = userRepository.findAll();
+        return users;
     }
 
 

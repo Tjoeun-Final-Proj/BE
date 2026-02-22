@@ -52,12 +52,12 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         // 토큰에서 userId 추출
-        Long userId = jwtProvider.getUserIdFromToken(token);
+        Long accountId = jwtProvider.getUserIdFromToken(token);
 
         // 인증 객체 생성 (권한은 아직 없음)
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        userId,              // principal
+                        accountId,              // principal
                         null,                // credentials
                         Collections.emptyList() // authorities
                 );

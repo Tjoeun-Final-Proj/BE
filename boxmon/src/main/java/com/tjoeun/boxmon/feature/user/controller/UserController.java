@@ -1,5 +1,7 @@
 package com.tjoeun.boxmon.feature.user.controller;
 
+import com.tjoeun.boxmon.feature.admin.domain.Admin;
+import com.tjoeun.boxmon.feature.user.domain.User;
 import com.tjoeun.boxmon.feature.user.dto.*;
 import com.tjoeun.boxmon.feature.user.service.UserService;
 import com.tjoeun.boxmon.security.jwt.RefreshTokenService;
@@ -9,13 +11,15 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.tjoeun.boxmon.feature.user.dto.AccountDto;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("api/user")
 public class UserController {
 
     private final UserService userService;
     private final RefreshTokenService refreshTokenService;
-
     public UserController(UserService userService, RefreshTokenService refreshTokenService) {
         this.userService = userService;
         this.refreshTokenService = refreshTokenService;
@@ -63,5 +67,11 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    // 회원 목록 조회
+    @GetMapping("list")
+    public ResponseEntity<?> getUserList() {
+        List<User> users = userService.getUserList();
+        return ResponseEntity.ok(users);
+    }
 
 }
