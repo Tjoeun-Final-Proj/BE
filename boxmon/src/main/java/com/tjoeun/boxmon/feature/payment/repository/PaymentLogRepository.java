@@ -1,4 +1,4 @@
-package com.tjoeun.boxmon.feature.payment;
+package com.tjoeun.boxmon.feature.payment.repository;
 
 import com.tjoeun.boxmon.feature.payment.domain.PaymentLog;
 import org.springframework.data.jpa.repository.JpaRepository;
