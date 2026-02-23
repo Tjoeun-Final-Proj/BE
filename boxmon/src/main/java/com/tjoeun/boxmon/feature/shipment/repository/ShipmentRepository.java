@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Shipment 엔티티에 대한 데이터 접근(Repository) 인터페이스입니다.
@@ -184,4 +185,8 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
     );
 
     List<Shipment> findByShipmentStatusOrderByCreatedAtDesc(ShipmentStatus shipmentStatus);
+
+    List<Shipment> findByShipmentStatus(ShipmentStatus shipmentStatus);
+
+    Optional<Shipment> findByShipmentIdAndShipmentStatus(Long shipmentId, ShipmentStatus shipmentStatus);
 }
