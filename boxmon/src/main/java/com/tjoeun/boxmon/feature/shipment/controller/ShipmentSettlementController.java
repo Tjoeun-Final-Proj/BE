@@ -57,7 +57,7 @@ public class ShipmentSettlementController {
             Authentication authentication,
             @Parameter(description = "조회할 연도", example = "2023") @RequestParam(name = "year") int year,
             @Parameter(description = "조회할 월", example = "10") @RequestParam(name = "month") int month,
-            @Parameter(description = "배송 상태 필터 (선택 사항)", example = "DELIVERED") @RequestParam(name = "shipmentStatus", required = false) ShipmentStatus shipmentStatus,
+            @Parameter(description = "배송 상태 필터 (선택 사항)", example = "IN_TRASIT") @RequestParam(name = "shipmentStatus", required = false) ShipmentStatus shipmentStatus,
             @Parameter(description = "정산 상태 필터 (선택 사항)", example = "COMPLETED") @RequestParam(name = "settlementStatus", required = false) SettlementStatus settlementStatus
     ) {
         Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
