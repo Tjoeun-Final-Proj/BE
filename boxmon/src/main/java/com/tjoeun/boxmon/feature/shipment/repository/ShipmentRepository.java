@@ -186,5 +186,7 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
     List<Shipment> findByShipmentStatusOrderByCreatedAtDesc(ShipmentStatus shipmentStatus);
 
+    List<Shipment> findByShipmentStatus(ShipmentStatus shipmentStatus);
+
     Optional<Shipment> findByShipmentIdAndShipmentStatus(Long shipmentId, ShipmentStatus shipmentStatus);
 }
