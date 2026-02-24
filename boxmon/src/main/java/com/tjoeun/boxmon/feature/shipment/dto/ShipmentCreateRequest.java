@@ -43,8 +43,6 @@ public class ShipmentCreateRequest {
     private Point waypoint2Point; // 두 번째 경유지 경위도 좌표
     private String waypoint2Address; // 두 번째 경유지 주소
 
-    private Double estimatedDistance; // 운송 예상 거리 (단위: km)
-
     @NotNull(message = "운임은 필수입니다.")
     private Integer price; // 운임
 
