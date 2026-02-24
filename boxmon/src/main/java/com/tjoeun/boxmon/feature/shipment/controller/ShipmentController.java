@@ -1,6 +1,7 @@
 package com.tjoeun.boxmon.feature.shipment.controller;
 
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.service.ShipmentService;
@@ -42,7 +43,7 @@ public class ShipmentController {
      * 새로운 배송을 생성합니다.
      *
      * @param authentication 현재 인증된 화주의 정보 (화주 ID 추출)
-     * @param request 배송 생성 요청 데이터
+     * @param request        배송 생성 요청 데이터
      */
     @Operation(summary = "배송 생성", description = "새로운 배송을 생성합니다.")
     @ApiResponse(responseCode = "201", description = "배송 생성 성공")
@@ -50,13 +51,13 @@ public class ShipmentController {
     @ApiResponse(responseCode = "401", description = "인증 실패")
     @ApiResponse(responseCode = "500", description = "서버 오류")
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public void createShipment(
+    public ResponseEntity<ShipmentCreateResponse> createShipment(
             Authentication authentication,
             @Parameter(description = "배송 생성 요청 본문", required = true) @RequestBody @Valid ShipmentCreateRequest request
     ) {
         Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
-        shipmentService.createShipment(shipperId, request);
+        Long shipmentId = shipmentService.createShipment(shipperId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ShipmentCreateResponse(shipmentId));
     }
 
     /**
