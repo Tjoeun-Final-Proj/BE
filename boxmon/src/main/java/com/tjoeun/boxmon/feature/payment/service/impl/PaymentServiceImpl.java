@@ -7,7 +7,8 @@ import com.tjoeun.boxmon.feature.payment.domain.PaymentLog;
 import com.tjoeun.boxmon.feature.payment.domain.PaymentStatus;
 import com.tjoeun.boxmon.feature.payment.dto.ConfirmPaymentRequest;
 import com.tjoeun.boxmon.feature.payment.mapper.PaymentLogMapper;
-import com.tjoeun.boxmon.feature.payment.service.PaymentUseCase;
+import com.tjoeun.boxmon.feature.payment.service.PaymentCancelUseCase;
+import com.tjoeun.boxmon.feature.payment.service.PaymentConfirmUseCase;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ import java.math.RoundingMode;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class PaymentServiceImpl implements PaymentUseCase {
+public class PaymentServiceImpl implements PaymentConfirmUseCase {
     private final TossApiClient tossApiClient;
     private final ShipmentRepository shipmentRepository;
     private final PaymentLogRepository paymentLogRepository;
