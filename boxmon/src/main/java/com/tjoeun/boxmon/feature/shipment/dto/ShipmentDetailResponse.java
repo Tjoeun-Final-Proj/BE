@@ -64,5 +64,6 @@ public class ShipmentDetailResponse {
     private Point pickupPoint; // 상차지 좌표
     private Point dropoffPoint; // 하차지 좌표
     private String cargoPhotoUrl; // 화물 등록 사진 URL
+    private String companyName; // 회사명
     private String dropoffPhotoUrl; // 하차 완료 사진 URL
 }

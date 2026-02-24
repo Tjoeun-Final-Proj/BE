@@ -119,6 +119,9 @@ public class Shipment {
     @Column(name = "cargo_photo_url")
     private String cargoPhotoUrl; // 화물 등록 시 첨부된 사진 URL (AWS S3)
 
+    @Column(name = "company_name")
+    private String companyName; // 회사명 (미입력 시 개인화주)
+
     @Column(name = "dropoff_photo_url")
     private String dropoffPhotoUrl; // 하차 완료 후 첨부된 사진 URL (AWS S3)
 

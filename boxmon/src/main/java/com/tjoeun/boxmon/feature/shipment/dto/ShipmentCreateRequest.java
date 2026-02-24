@@ -68,4 +68,6 @@ public class ShipmentCreateRequest {
     private String description; // 특이사항
 
     private String cargoPhotoUrl; // 화물 사진 URL
+
+    private String companyName; // 회사명 (선택 입력)
 }
