@@ -29,6 +29,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
     @PostConstruct
     @Transactional
     public void initializeFeeSettingIfAbsent() {
+        // 애플리케이션 초기화 시 fee 설정 row를 보장한다.
         if (systemSettingRepository.findById(FEE_SETTING_ID).isEmpty()) {
             systemSettingRepository.save(new SystemSetting(FEE_SETTING_ID, DEFAULT_FEE_RATE.toPlainString()));
         }
@@ -36,6 +37,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
 
     @Override
     public BigDecimal getFeeRateOrDefault() {
+        // 화물 등록 계산에 사용할 수수료율을 조회하고, 누락/이상값이면 기본값으로 안전하게 대체한다.
         Optional<SystemSetting> settingOptional = systemSettingRepository.findById(FEE_SETTING_ID);
 
         if (settingOptional.isEmpty()) {
@@ -61,6 +63,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
 
     @Override
     public AdminFeeSettingResponse getFeeSetting(Long adminId) {
+        // 관리자 권한 검증 후 현재 fee 설정의 원본값과 실제 적용값을 함께 반환한다.
         validateAdminAccess(adminId);
 
         SystemSetting setting = systemSettingRepository.findById(FEE_SETTING_ID)
@@ -76,6 +79,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
     @Override
     @Transactional
     public AdminFeeSettingResponse updateFeeSetting(Long adminId, String value) {
+        // 관리자 권한과 입력값(숫자/범위)을 검증한 뒤 fee 설정을 저장한다.
         validateAdminAccess(adminId);
 
         BigDecimal feeRate = parseFeeRate(value)
@@ -99,6 +103,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
     }
 
     private Optional<BigDecimal> parseFeeRate(String rawValue) {
+        // 문자열 설정값을 수수료율 숫자로 파싱한다.
         if (rawValue == null || rawValue.isBlank()) {
             return Optional.empty();
         }
@@ -110,10 +115,12 @@ public class SystemSettingServiceImpl implements SystemSettingService {
     }
 
     private boolean isInRange(BigDecimal value) {
+        // 수수료율 허용 범위(0~1) 여부를 판별한다.
         return value.compareTo(BigDecimal.ZERO) >= 0 && value.compareTo(BigDecimal.ONE) <= 0;
     }
 
     private void validateAdminAccess(Long adminId) {
+        // JWT principal이 실제 관리자 계정인지 확인한다.
         if (!adminRepository.existsById(adminId)) {
             throw new RoleAccessDeniedException("Admin access required.");
         }
