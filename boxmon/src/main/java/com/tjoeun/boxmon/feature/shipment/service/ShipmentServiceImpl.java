@@ -108,10 +108,11 @@ public class ShipmentServiceImpl implements ShipmentService {
      *
      * @param shipperId 화주(Shipper)의 고유 ID
      * @param request   화물 생성 요청 데이터 (픽업/드랍오프 정보, 화물 정보 등)
+     * @return 생성된 화물 ID
      * @throws UserNotFoundException 주어진 화주 ID에 해당하는 화주를 찾을 수 없을 때 발생
      */
     @Override
-    public void createShipment(Long shipperId, ShipmentCreateRequest request) {
+    public Long createShipment(Long shipperId, ShipmentCreateRequest request) {
         // 1. 화주 정보 조회: 요청된 shipperId로 화주 엔티티를 찾고, 없으면 예외 발생
         Shipper shipper = shipperRepository.findById(shipperId)
                 .orElseThrow(() -> new UserNotFoundException("화주를 찾을 수 없습니다."));
@@ -167,7 +168,8 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .build();
 
         // 6. 생성된 Shipment 엔티티를 데이터베이스에 저장
-        shipmentRepository.save(shipment);
+        Shipment savedShipment = shipmentRepository.save(shipment);
+        return savedShipment.getShipmentId();
     }
 
     /**

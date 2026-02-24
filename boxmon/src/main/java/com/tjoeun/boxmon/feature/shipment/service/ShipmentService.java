@@ -17,8 +17,9 @@ public interface ShipmentService {
      *
      * @param shipperId 화주 ID
      * @param request 배송 생성 요청 DTO
+     * @return 생성된 화물 ID
      */
-    void createShipment(Long shipperId, ShipmentCreateRequest request);
+    Long createShipment(Long shipperId, ShipmentCreateRequest request);
 
     /**
      * 배차를 수락하여 요청 건에 배차 기사 정보를 부여하고 상태를 배차 완료로 변경합니다.
