@@ -161,6 +161,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .needFreeze(request.getNeedFreeze())
                 .description(request.getDescription())
                 .cargoPhotoUrl(request.getCargoPhotoUrl())
+                .companyName(normalizeCompanyName(request.getCompanyName()))
                 .shipmentStatus(shipmentStatus)
                 .settlementStatus(SettlementStatus.INELIGIBLE) // 초기 정산 상태는 '정산 대상 아님'
                 .build();
@@ -487,7 +488,8 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .platformFee(roundMoney(shipment.getPlatformFee()))
                 .profit(roundMoney(shipment.getProfit()))
                 .pickupPoint(convertToSpringPoint(shipment.getPickupPoint()))
-                .dropoffPoint(convertToSpringPoint(shipment.getDropoffPoint()));
+                .dropoffPoint(convertToSpringPoint(shipment.getDropoffPoint()))
+                .companyName(normalizeCompanyName(shipment.getCompanyName()));
 
         if (includeCargoPhotoUrl) {
             builder.cargoPhotoUrl(shipment.getCargoPhotoUrl());
@@ -527,6 +529,13 @@ public class ShipmentServiceImpl implements ShipmentService {
     private BigDecimal roundMoney(BigDecimal value) {
         if (value == null) return null;
         return value.setScale(0, RoundingMode.HALF_UP);
+    }
+
+    private String normalizeCompanyName(String companyName) {
+        if (companyName == null || companyName.isBlank()) {
+            return "개인화주";
+        }
+        return companyName.trim();
     }
 
     @Override
