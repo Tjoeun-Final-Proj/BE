@@ -50,6 +50,24 @@ public interface ShipmentService {
     void completeTransport(Long driverId, Long shipmentId, String dropoffPhotoUrl);
 
     /**
+     * 배송 취소를 요청합니다.
+     * REQUESTED 상태는 즉시 취소되며, ASSIGNED/IN_TRANSIT 상태는 양측 요청이 모이면 취소가 확정됩니다.
+     *
+     * @param userId 요청자 ID (화주 또는 배정 기사)
+     * @param shipmentId 배송 ID
+     */
+    void cancelShipment(Long userId, Long shipmentId);
+
+    /**
+     * 배송 취소 요청을 철회합니다.
+     * ASSIGNED/IN_TRANSIT 상태에서만 본인 요청 토글을 해제할 수 있습니다.
+     *
+     * @param userId 요청자 ID (화주 또는 배정 기사)
+     * @param shipmentId 배송 ID
+     */
+    void withdrawShipmentCancel(Long userId, Long shipmentId);
+
+    /**
      * 특정 배송의 상세 정보를 조회합니다. 예상 도착 시간 및 실시간 위치 정보가 포함될 수 있습니다.
      * @param shipmentId 배송 고유 식별자
      * @return 배송 상세 응답 DTO

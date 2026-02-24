@@ -137,6 +137,51 @@ public class ShipmentController {
     }
 
     /**
+     * 배송 취소를 요청합니다.
+     * REQUESTED 상태는 즉시 취소되며, ASSIGNED/IN_TRANSIT 상태는 상호 요청이 모이면 취소 확정됩니다.
+     *
+     * @param authentication 인증된 사용자
+     * @param shipmentId 배송 ID
+     */
+    @Operation(summary = "배송 취소 요청", description = "배송 취소를 요청합니다.")
+    @ApiResponse(responseCode = "204", description = "취소 요청 처리 완료")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "권한 없음")
+    @ApiResponse(responseCode = "404", description = "배송을 찾을 수 없음")
+    @ApiResponse(responseCode = "409", description = "상태 전환 불가")
+    @PostMapping("/{shipmentId}/cancel")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelShipment(
+            Authentication authentication,
+            @Parameter(description = "배송 ID", example = "1") @PathVariable(name = "shipmentId") Long shipmentId
+    ) {
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        shipmentService.cancelShipment(userId, shipmentId);
+    }
+
+    /**
+     * 배송 취소 요청을 철회합니다.
+     *
+     * @param authentication 인증된 사용자
+     * @param shipmentId 배송 ID
+     */
+    @Operation(summary = "배송 취소 철회", description = "기존 배송 취소 요청을 철회합니다.")
+    @ApiResponse(responseCode = "204", description = "취소 철회 처리 완료")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "권한 없음")
+    @ApiResponse(responseCode = "404", description = "배송을 찾을 수 없음")
+    @ApiResponse(responseCode = "409", description = "상태 전환 불가")
+    @PostMapping("/{shipmentId}/cancel/withdraw")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void withdrawShipmentCancel(
+            Authentication authentication,
+            @Parameter(description = "배송 ID", example = "1") @PathVariable(name = "shipmentId") Long shipmentId
+    ) {
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        shipmentService.withdrawShipmentCancel(userId, shipmentId);
+    }
+
+    /**
      * 특정 배송의 상세 정보를 조회합니다.
      * 화주/운송 기사 상세 화면에 필요한 정보를 제공합니다.
      *

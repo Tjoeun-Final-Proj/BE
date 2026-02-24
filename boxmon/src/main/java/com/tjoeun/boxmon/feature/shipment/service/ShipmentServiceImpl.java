@@ -18,6 +18,7 @@ import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.locationtech.jts.geom.Coordinate; // JTS 좌표 객체
 import org.locationtech.jts.geom.GeometryFactory; // JTS 지오메트리 객체 생성 팩토리
 
@@ -33,6 +34,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.PessimisticLockException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -282,6 +284,82 @@ public class ShipmentServiceImpl implements ShipmentService {
             notificationUseCase.notifyTransportCompleted(shipmentId);
         } catch (Exception e) {
             log.warn("운송 완료는 성공했지만 알림 전송은 건너뜁니다. shipmentId={}", shipmentId, e);
+        }
+    }
+
+    @Override
+    public void cancelShipment(Long userId, Long shipmentId) {
+        try {
+            Shipment shipment = shipmentRepository.findByShipmentIdForUpdate(shipmentId)
+                    .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
+
+            UserRoleInShipment role = resolveUserRole(shipment, userId);
+            ShipmentStatus status = shipment.getShipmentStatus();
+
+            if (status == ShipmentStatus.DONE || status == ShipmentStatus.CANCELED) {
+                throw new ShipmentStateConflictException("취소할 수 없는 상태입니다.");
+            }
+
+            if (status == ShipmentStatus.REQUESTED) {
+                if (role != UserRoleInShipment.SHIPPER) {
+                    throw new RoleAccessDeniedException("Only shipper can cancel REQUESTED shipment.");
+                }
+                finalizeCancellation(shipment);
+                shipmentRepository.save(shipment);
+                return;
+            }
+
+            if (status != ShipmentStatus.ASSIGNED && status != ShipmentStatus.IN_TRANSIT) {
+                throw new ShipmentStateConflictException("취소할 수 없는 상태입니다.");
+            }
+
+            boolean isRequesterAlreadySet = setCancelToggle(shipment, role, true);
+            if (isRequesterAlreadySet) {
+                return;
+            }
+
+            if (isBothCancelRequested(shipment)) {
+                finalizeCancellation(shipment);
+                shipmentRepository.save(shipment);
+                return;
+            }
+
+            shipmentRepository.save(shipment);
+            if (shipment.getDriver() != null) {
+                try {
+                    notificationUseCase.notifyAssignmentCancellationRequested(shipmentId, userId);
+                } catch (Exception e) {
+                    log.warn("취소 요청은 성공했지만 알림 전송은 건너뜁니다. shipmentId={}", shipmentId, e);
+                }
+            }
+        } catch (PessimisticLockException | PessimisticLockingFailureException e) {
+            throw new ShipmentStateConflictException("동시 요청 충돌로 취소 요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.");
+        }
+    }
+
+    @Override
+    public void withdrawShipmentCancel(Long userId, Long shipmentId) {
+        try {
+            Shipment shipment = shipmentRepository.findByShipmentIdForUpdate(shipmentId)
+                    .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
+
+            UserRoleInShipment role = resolveUserRole(shipment, userId);
+            ShipmentStatus status = shipment.getShipmentStatus();
+
+            if (status == ShipmentStatus.DONE || status == ShipmentStatus.CANCELED) {
+                throw new ShipmentStateConflictException("철회할 수 없는 상태입니다.");
+            }
+            if (status == ShipmentStatus.REQUESTED) {
+                throw new ShipmentStateConflictException("REQUESTED 상태 취소는 즉시 확정되므로 철회할 수 없습니다.");
+            }
+            if (status != ShipmentStatus.ASSIGNED && status != ShipmentStatus.IN_TRANSIT) {
+                throw new ShipmentStateConflictException("철회할 수 없는 상태입니다.");
+            }
+
+            setCancelToggle(shipment, role, false);
+            shipmentRepository.save(shipment);
+        } catch (PessimisticLockException | PessimisticLockingFailureException e) {
+            throw new ShipmentStateConflictException("동시 요청 충돌로 취소 철회를 처리하지 못했습니다. 잠시 후 다시 시도해주세요.");
         }
     }
 
@@ -541,6 +619,45 @@ public class ShipmentServiceImpl implements ShipmentService {
             return "개인화주";
         }
         return companyName.trim();
+    }
+
+    private UserRoleInShipment resolveUserRole(Shipment shipment, Long userId) {
+        boolean isShipper = shipment.getShipper() != null && shipment.getShipper().getShipperId().equals(userId);
+        boolean isDriver = shipment.getDriver() != null && shipment.getDriver().getDriverId().equals(userId);
+
+        if (isShipper) {
+            return UserRoleInShipment.SHIPPER;
+        }
+        if (isDriver) {
+            return UserRoleInShipment.DRIVER;
+        }
+        throw new RoleAccessDeniedException("Only shipment shipper or assigned driver can request cancellation.");
+    }
+
+    private boolean setCancelToggle(Shipment shipment, UserRoleInShipment role, boolean value) {
+        if (role == UserRoleInShipment.SHIPPER) {
+            boolean already = Boolean.TRUE.equals(shipment.getShipperCancelToggle()) == value;
+            shipment.setShipperCancelToggle(value);
+            return already;
+        }
+
+        boolean already = Boolean.TRUE.equals(shipment.getDriverCancelToggle()) == value;
+        shipment.setDriverCancelToggle(value);
+        return already;
+    }
+
+    private boolean isBothCancelRequested(Shipment shipment) {
+        return Boolean.TRUE.equals(shipment.getShipperCancelToggle())
+                && Boolean.TRUE.equals(shipment.getDriverCancelToggle());
+    }
+
+    private void finalizeCancellation(Shipment shipment) {
+        shipment.setShipmentStatus(ShipmentStatus.CANCELED);
+        shipment.setShipperCancelToggle(false);
+        shipment.setDriverCancelToggle(false);
+
+        // 결제 취소 연동 예정
+        // TODO: Toss 결제 취소 API 연동 후 실제 환불 처리
     }
 
     @Override
@@ -854,5 +971,10 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .description(shipment.getDescription())
                 .profit(roundMoney(shipment.getProfit()))
                 .build();
+    }
+
+    private enum UserRoleInShipment {
+        SHIPPER,
+        DRIVER
     }
 }

@@ -3,7 +3,9 @@ package com.tjoeun.boxmon.feature.shipment.repository;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -189,4 +191,8 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
     List<Shipment> findByShipmentStatus(ShipmentStatus shipmentStatus);
 
     Optional<Shipment> findByShipmentIdAndShipmentStatus(Long shipmentId, ShipmentStatus shipmentStatus);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM Shipment s WHERE s.shipmentId = :shipmentId")
+    Optional<Shipment> findByShipmentIdForUpdate(@Param("shipmentId") Long shipmentId);
 }
