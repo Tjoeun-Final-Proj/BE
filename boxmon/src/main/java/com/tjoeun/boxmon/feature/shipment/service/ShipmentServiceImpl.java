@@ -4,6 +4,7 @@ import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.exception.RoleAccessDeniedException;
 import com.tjoeun.boxmon.exception.ShipmentStateConflictException;
 import com.tjoeun.boxmon.exception.UserNotFoundException;
+import com.tjoeun.boxmon.feature.admin.service.SystemSettingService;
 import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
@@ -52,6 +53,7 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final ShipmentRepository shipmentRepository;
     private final ShipperRepository shipperRepository;
     private final DriverRepository driverRepository;
+    private final SystemSettingService systemSettingService;
     private final NotificationUseCase notificationUseCase;
     private final NaverDirectionsApiClient naverDirectionsApiClient;
 
@@ -130,11 +132,12 @@ public class ShipmentServiceImpl implements ShipmentService {
 
         // 4. 배송 초기 상태 및 비용 계산:
         //    - 배송 상태를 '요청됨'으로 초기화
-        //    - 요청된 운임을 기반으로 플랫폼 수수료 (10%) 및 운송 기사 수익 계산
-        //    - TODO: 수수료율은 현재 하드코딩되어 있으며, 추후 시스템 설정 테이블에서 관리하도록 변경 예정
+        //    - 요청된 운임을 기반으로 플랫폼 수수료 및 운송 기사 수익 계산
+        //    - 수수료율은 system_setting(fee) 설정값을 사용 (이상/누락 시 기본값 0.1 fallback)
         ShipmentStatus shipmentStatus = ShipmentStatus.REQUESTED;
         BigDecimal price = BigDecimal.valueOf(request.getPrice()).setScale(0, RoundingMode.HALF_UP);
-        BigDecimal platformFee = price.multiply(BigDecimal.valueOf(0.1)).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal feeRate = systemSettingService.getFeeRateOrDefault();
+        BigDecimal platformFee = price.multiply(feeRate).setScale(0, RoundingMode.HALF_UP);
         BigDecimal profit = price.subtract(platformFee).setScale(0, RoundingMode.HALF_UP);
 
         // 5. Shipment 엔티티 빌드 및 생성: 요청 데이터를 기반으로 Shipment 엔티티를 생성
