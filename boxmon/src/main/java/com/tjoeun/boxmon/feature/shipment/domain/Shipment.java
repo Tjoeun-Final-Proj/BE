@@ -153,6 +153,11 @@ public class Shipment {
     private Point currentLocationPoint; // 운송 중인 차량의 최신 경위도 좌표
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false)
+    @Builder.Default // 빌더를 사용하지 않고 생성할 때를 대비
+    private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
+    
+    @Enumerated(EnumType.STRING)
     @Column(name = "settlement_status", nullable = false)
     @Builder.Default // 빌더를 사용하지 않고 생성할 때를 대비
     private SettlementStatus settlementStatus = SettlementStatus.INELIGIBLE; // 배송 정산 상태
