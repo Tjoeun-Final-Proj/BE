@@ -290,40 +290,53 @@ public class ShipmentServiceImpl implements ShipmentService {
     @Override
     public void cancelShipment(Long userId, Long shipmentId) {
         try {
+            // 취소/철회 요청이 동시에 들어와도 상태가 꼬이지 않도록
+            // 비관적 락(PESSIMISTIC_WRITE)으로 대상 화물을 선점한 뒤 처리합니다.
             Shipment shipment = shipmentRepository.findByShipmentIdForUpdate(shipmentId)
                     .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
 
+            // 요청자가 이 배송의 화주/배정 기사인지 판별합니다.
+            // (둘 다 아니면 403 예외)
             UserRoleInShipment role = resolveUserRole(shipment, userId);
             ShipmentStatus status = shipment.getShipmentStatus();
 
+            // 완료/취소 완료 건은 더 이상 취소 플로우를 진행할 수 없습니다.
             if (status == ShipmentStatus.DONE || status == ShipmentStatus.CANCELED) {
                 throw new ShipmentStateConflictException("취소할 수 없는 상태입니다.");
             }
 
+            // REQUESTED(미배차)는 화주 단독 즉시 취소 정책입니다.
             if (status == ShipmentStatus.REQUESTED) {
                 if (role != UserRoleInShipment.SHIPPER) {
                     throw new RoleAccessDeniedException("Only shipper can cancel REQUESTED shipment.");
                 }
+                // 즉시 취소 확정 + 토글 초기화
                 finalizeCancellation(shipment);
                 shipmentRepository.save(shipment);
                 return;
             }
 
+            // 배차/운송중 상태에서만 "상호 요청 기반 취소"를 허용합니다.
             if (status != ShipmentStatus.ASSIGNED && status != ShipmentStatus.IN_TRANSIT) {
                 throw new ShipmentStateConflictException("취소할 수 없는 상태입니다.");
             }
 
+            // 요청자 본인 토글을 true로 올립니다.
+            // 이미 true인 경우는 멱등 요청으로 간주하고 추가 처리 없이 종료합니다.
             boolean isRequesterAlreadySet = setCancelToggle(shipment, role, true);
             if (isRequesterAlreadySet) {
                 return;
             }
 
+            // 양측 토글이 모두 true면 취소 합의가 완료된 것으로 보고 즉시 취소 확정합니다.
             if (isBothCancelRequested(shipment)) {
                 finalizeCancellation(shipment);
                 shipmentRepository.save(shipment);
                 return;
             }
 
+            // 아직 상대방 동의가 없는 상태이므로 현재 토글 상태만 저장하고,
+            // 상대방에게 "취소 요청 도착" 알림을 발송합니다.
             shipmentRepository.save(shipment);
             if (shipment.getDriver() != null) {
                 try {
@@ -340,22 +353,28 @@ public class ShipmentServiceImpl implements ShipmentService {
     @Override
     public void withdrawShipmentCancel(Long userId, Long shipmentId) {
         try {
+            // 취소 요청과 철회 요청의 경합 상황을 동일하게 직렬화 처리하기 위해 락 조회를 사용합니다.
             Shipment shipment = shipmentRepository.findByShipmentIdForUpdate(shipmentId)
                     .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
 
+            // 요청자 역할(화주/기사) 확인
             UserRoleInShipment role = resolveUserRole(shipment, userId);
             ShipmentStatus status = shipment.getShipmentStatus();
 
+            // 이미 끝난 건(DONE/CANCELED)은 철회 대상이 아닙니다.
             if (status == ShipmentStatus.DONE || status == ShipmentStatus.CANCELED) {
                 throw new ShipmentStateConflictException("철회할 수 없는 상태입니다.");
             }
+            // REQUESTED는 취소 요청 즉시 취소 확정 정책이라 "철회 대기 상태"가 존재하지 않습니다.
             if (status == ShipmentStatus.REQUESTED) {
                 throw new ShipmentStateConflictException("REQUESTED 상태 취소는 즉시 확정되므로 철회할 수 없습니다.");
             }
+            // 철회는 상호 요청 단계가 가능한 ASSIGNED/IN_TRANSIT에서만 허용합니다.
             if (status != ShipmentStatus.ASSIGNED && status != ShipmentStatus.IN_TRANSIT) {
                 throw new ShipmentStateConflictException("철회할 수 없는 상태입니다.");
             }
 
+            // 본인 토글만 false로 되돌려 취소 요청 의사를 철회합니다.
             setCancelToggle(shipment, role, false);
             shipmentRepository.save(shipment);
         } catch (PessimisticLockException | PessimisticLockingFailureException e) {
@@ -622,6 +641,8 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     private UserRoleInShipment resolveUserRole(Shipment shipment, Long userId) {
+        // 취소/철회 API는 "화주" 또는 "해당 운송의 배정 기사"만 호출할 수 있습니다.
+        // 이 판별 결과를 enum으로 고정해 이후 토글 처리 분기를 단순화합니다.
         boolean isShipper = shipment.getShipper() != null && shipment.getShipper().getShipperId().equals(userId);
         boolean isDriver = shipment.getDriver() != null && shipment.getDriver().getDriverId().equals(userId);
 
@@ -635,6 +656,9 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     private boolean setCancelToggle(Shipment shipment, UserRoleInShipment role, boolean value) {
+        // 역할에 따라 서로 다른 토글 컬럼을 갱신합니다.
+        // 반환값은 "요청 전부터 이미 해당 값이었는지" 여부이며,
+        // cancelShipment()에서 멱등 처리 여부를 판단할 때 사용합니다.
         if (role == UserRoleInShipment.SHIPPER) {
             boolean already = Boolean.TRUE.equals(shipment.getShipperCancelToggle()) == value;
             shipment.setShipperCancelToggle(value);
@@ -647,11 +671,15 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     private boolean isBothCancelRequested(Shipment shipment) {
+        // 양측 모두 취소 의사를 표시했는지 확인합니다.
         return Boolean.TRUE.equals(shipment.getShipperCancelToggle())
                 && Boolean.TRUE.equals(shipment.getDriverCancelToggle());
     }
 
     private void finalizeCancellation(Shipment shipment) {
+        // 취소 확정 처리:
+        // 1) 배송 상태를 CANCELED로 전환
+        // 2) 토글은 후속 조회 혼동을 막기 위해 false로 초기화
         shipment.setShipmentStatus(ShipmentStatus.CANCELED);
         shipment.setShipperCancelToggle(false);
         shipment.setDriverCancelToggle(false);
