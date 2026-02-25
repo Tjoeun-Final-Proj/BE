@@ -135,6 +135,8 @@ public class ShipmentServiceImpl implements ShipmentService {
                 Optional.ofNullable(waypoint1Point), Optional.ofNullable(waypoint2Point));
 
 
+        // 화물 생성 요청에 이미지가 포함되면 백엔드에서 Object Storage에 직접 업로드합니다.
+        // 업로드 성공 시 DB에는 외부 접근 가능한 URL만 저장합니다.
         String uploadedCargoPhotoKey = null;
         String cargoPhotoUrl = null;
         if (cargoPhoto != null && !cargoPhoto.isEmpty()) {
@@ -187,6 +189,7 @@ public class ShipmentServiceImpl implements ShipmentService {
             Shipment savedShipment = shipmentRepository.save(shipment);
             return savedShipment.getShipmentId();
         } catch (RuntimeException e) {
+            // 업로드 후 DB 저장이 실패하면 고아 파일이 남지 않도록 보상 삭제를 수행합니다.
             if (uploadedCargoPhotoKey != null) {
                 objectStorageService.deleteObject(uploadedCargoPhotoKey);
             }

@@ -18,9 +18,14 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * NCP Object Storage(S3 호환) 구현체.
+ * 화물 이미지 업로드, 공개 URL 생성, 보상 삭제를 담당합니다.
+ */
 @Slf4j
 @Service
 public class NcpObjectStorageService implements ObjectStorageService {
+    // 이미지 업로드 기본 정책: 최대 5MB, jpeg/png/webp만 허용
     private static final long MAX_UPLOAD_SIZE_BYTES = 5L * 1024 * 1024;
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg",
@@ -44,12 +49,14 @@ public class NcpObjectStorageService implements ObjectStorageService {
 
     @Override
     public String uploadCargoPhoto(MultipartFile file) {
+        // 파일 기본 검증(비어있는지/용량/MIME 타입)
         validateImageFile(file);
 
         String extension = resolveExtension(file);
         String objectKey = generateCargoObjectKey(extension);
 
         try {
+            // Object Storage에 객체 저장 후 key를 반환합니다.
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(bucket)
                     .key(objectKey)
@@ -68,12 +75,14 @@ public class NcpObjectStorageService implements ObjectStorageService {
 
     @Override
     public String buildPublicUrl(String objectKey) {
+        // 공개 버킷 전제: endpoint/bucket/key 조합으로 정적 접근 URL 생성
         String trimmedEndpoint = endpoint.endsWith("/") ? endpoint.substring(0, endpoint.length() - 1) : endpoint;
         return trimmedEndpoint + "/" + bucket + "/" + objectKey;
     }
 
     @Override
     public void deleteObject(String objectKey) {
+        // DB 저장 실패 등 보상 트랜잭션에서 사용합니다.
         try {
             s3Client.deleteObject(DeleteObjectRequest.builder()
                     .bucket(bucket)
@@ -85,6 +94,7 @@ public class NcpObjectStorageService implements ObjectStorageService {
     }
 
     private void validateImageFile(MultipartFile file) {
+        // 서비스 레벨에서 선제 검증해 스토리지 불필요 호출을 줄입니다.
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("이미지 파일이 비어 있습니다.");
         }
@@ -111,8 +121,8 @@ public class NcpObjectStorageService implements ObjectStorageService {
     }
 
     private String generateCargoObjectKey(String extension) {
+        // 월 단위 prefix + UUID 조합으로 충돌 가능성을 낮춥니다.
         String yyyymm = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
         return "shipments/cargo/" + yyyymm + "/" + UUID.randomUUID() + "." + extension;
     }
 }
-
