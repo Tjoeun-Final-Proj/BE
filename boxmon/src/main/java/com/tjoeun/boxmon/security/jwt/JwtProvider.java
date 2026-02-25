@@ -13,7 +13,7 @@ import java.util.Date;
 @Component
 public class JwtProvider {
     private final String SECRET_KEY;
-    private final long ACCESS_TOKEN_EXPIRE_TIME = 1000L * 60 * 15; //Access Token 만료시간 (15분)
+    private final long ACCESS_TOKEN_EXPIRE_TIME = 1000L * 60 * 60 * 24 * 14; //Access Token 만료시간 (15분)
     private final long REFRESH_TOKEN_EXPIRE_TIME = 1000L * 60 * 60 * 24 * 14; // Refresh Token 만료시간 (14일)
 
     public JwtProvider() {

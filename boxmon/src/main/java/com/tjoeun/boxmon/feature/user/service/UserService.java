@@ -3,7 +3,6 @@ package com.tjoeun.boxmon.feature.user.service;
 import com.tjoeun.boxmon.exception.DuplicateEmailException;
 import com.tjoeun.boxmon.exception.InvalidPasswordException;
 import com.tjoeun.boxmon.exception.UserNotFoundException;
-import com.tjoeun.boxmon.feature.admin.domain.Admin;
 import com.tjoeun.boxmon.feature.user.domain.Driver;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
 import com.tjoeun.boxmon.feature.user.domain.User;
@@ -15,14 +14,13 @@ import com.tjoeun.boxmon.feature.user.repository.UserRepository;
 
 import com.tjoeun.boxmon.security.jwt.JwtProvider;
 import jakarta.transaction.Transactional;
-import org.springframework.http.ResponseEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 
-
+@Slf4j
 @Service
 public class UserService {
 
@@ -56,8 +54,9 @@ public class UserService {
                 request.getIsPushEnabled(),
                 request.getUserType(),
                 request.getBusinessNumber(),
-                ""
-
+                "",
+                Boolean.TRUE,
+                Boolean.FALSE
         );
         user = userRepository.save(user);
         Shipper shipper = new Shipper(user);
@@ -71,8 +70,6 @@ public class UserService {
             throw new DuplicateEmailException("이미 존재하는 이메일입니다");
         }
 
-        //자격증 확인 넣어야함
-
         String encodedPW = passwordEncoder.encode(request.getPassword());
         User user = new User(
                 request.getEmail(),
@@ -83,7 +80,9 @@ public class UserService {
                 request.getIsPushEnabled(),
                 request.getUserType(),
                 request.getBusinessNumber(),
-                ""
+                "",
+                Boolean.TRUE,
+                Boolean.FALSE
         );
         user = userRepository.save(user);
 
@@ -144,6 +143,30 @@ public class UserService {
     public List<User> getUserList() {
         List<User> users = userRepository.findAll();
         return users;
+    }
+
+    //회원 탈퇴 (소프트삭제)
+    public void deleteUser(Long userId, String pw){
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
+        if(!passwordEncoder.matches(pw, user.getPassword())){
+            log.info("pw: {}, encoded pw: {}, db pw: {}",pw, passwordEncoder.encode(pw),user.getPassword());
+            throw new InvalidPasswordException("비밀번호 불일치");
+        }
+        if(user.getIsDelete()){
+            return;
+        }
+        
+        // 삭제된 사용자 수를 세어서 다음 번호 결정
+        long deletedCount = userRepository.countDeletedUsers();
+        String deletedEmail = (deletedCount + 1) + "@delete.com";
+
+        user.setEmail(deletedEmail);
+        user.setName("탈퇴한 사용자");
+        user.setPhone("탈퇴한 사용자");
+        user.setIsDelete(true);
+        
+        userRepository.save(user);
     }
 
 

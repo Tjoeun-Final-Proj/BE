@@ -74,4 +74,11 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    // 회원 탈퇴
+    @PostMapping("delete")
+    public ResponseEntity<Void> deleteUser(@AuthenticationPrincipal Long userId, @RequestBody String pw){
+        userService.deleteUser(userId, pw);
+        return ResponseEntity.ok().build();
+    }
+
 }

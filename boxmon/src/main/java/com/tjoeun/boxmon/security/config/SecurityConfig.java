@@ -1,7 +1,9 @@
 package com.tjoeun.boxmon.security.config;
 
+import com.tjoeun.boxmon.security.jwt.ExceptionHandlingFilter;
 import com.tjoeun.boxmon.security.jwt.JwtFilter;
 import com.tjoeun.boxmon.security.jwt.JwtProvider;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,13 +13,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtProvider jwtProvider;
-
-    public SecurityConfig(JwtProvider jwtProvider) {
-        this.jwtProvider = jwtProvider;
-    }
+    private final JwtFilter jwtFilter;
+    private final ExceptionHandlingFilter exceptionHandlingFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -45,9 +45,14 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
-                        new JwtFilter(jwtProvider),
+                        jwtFilter,
                         UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterBefore(
+                        exceptionHandlingFilter,
+                        JwtFilter.class
                 );
+
 
 
         return http.build();

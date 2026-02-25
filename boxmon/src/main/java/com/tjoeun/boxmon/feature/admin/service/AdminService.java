@@ -11,26 +11,26 @@ import com.tjoeun.boxmon.feature.admin.dto.AdminLogin;
 import com.tjoeun.boxmon.feature.admin.dto.AdminRequest;
 import com.tjoeun.boxmon.feature.admin.repository.AdminRepository;
 import com.tjoeun.boxmon.security.jwt.JwtProvider;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class AdminService {
 
     private final AdminRepository adminRepository;
     private final PasswordEncoder encoder;
     private  final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
-
-    public AdminService(AdminRepository adminRepository, PasswordEncoder encoder, JwtProvider jwtProvider, PasswordEncoder passwordEncoder) {
-        this.adminRepository = adminRepository;
-        this.encoder = encoder;
-        this.jwtProvider = jwtProvider;
-        this.passwordEncoder = passwordEncoder;
-    }
+    private final EntityManager em;
 
     // 관리자 계정 생성
     public void createAdmin(AdminRequest adminRequest) {
@@ -76,5 +76,17 @@ public class AdminService {
     public List<Admin> getAdminList() {
         List<Admin> admins = adminRepository.findAll();
         return admins;
+    }
+
+    //관리자 계정 탈퇴
+    @Transactional
+    public void deleteAdmin(Long adminId, String pw){
+        Admin admin = adminRepository.findByAdminId(adminId)
+                .orElseThrow();
+        if(!passwordEncoder.matches(pw, admin.getPassword())){
+            throw new InvalidPasswordException("비밀번호 불일치");
+        }
+        adminRepository.deleteById(adminId);
+        em.flush();
     }
 }

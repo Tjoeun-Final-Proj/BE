@@ -40,10 +40,16 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("list")
+    @GetMapping("/list")
     public ResponseEntity<?> getAdminList() {
         List<Admin> admins = adminService.getAdminList();
         return ResponseEntity.ok(admins);
+    }
+
+    @PostMapping("/delete")
+    public ResponseEntity<Void> deleteAdmin(@AuthenticationPrincipal Long adminId, @RequestBody String pw){
+        adminService.deleteAdmin(adminId, pw);
+        return ResponseEntity.ok().build();
     }
 
 }
