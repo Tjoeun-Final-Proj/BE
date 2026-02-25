@@ -1,28 +1,29 @@
 package com.tjoeun.boxmon.feature.payment.domain;
 
-import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @NoArgsConstructor
-@Builder
 @AllArgsConstructor
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"pay"})
+})
 public class PaymentLog {
     @Id
-    @Column(name = "payment_key")
-    private String paymentKey;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "logId")
+    private Long logId;
     
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "shipment_id", nullable = false)
-    private Shipment shipment;
+    @JoinColumn(name = "payment_id", nullable = false)
+    private Payment payment;
     
-    @Column(name = "evnet_type", nullable = false)
+    @Column(name = "event_type", nullable = false)
     private PaymentEvent eventType;
     
     @Column(name = "created_at", nullable = false)
@@ -31,5 +32,13 @@ public class PaymentLog {
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();
+    }
+
+
+    @Builder
+    public PaymentLog(Payment payment, PaymentEvent eventType, LocalDateTime createdAt) {
+        this.payment = payment;
+        this.eventType = eventType;
+        this.createdAt = createdAt;
     }
 }
