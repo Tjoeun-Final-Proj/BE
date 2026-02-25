@@ -47,4 +47,10 @@ public class ExceotionController {
     public ResponseEntity<String> roleAccessDeniedException(RoleAccessDeniedException e){
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
     }
+    
+    //같은 결제에 대한 중복 승인 요청의 충돌처리 -> 409(conflict)
+    @ExceptionHandler(PaymentConfirmConflictException.class)
+    public ResponseEntity<String> paymentConfirmConflictException(PaymentConfirmConflictException e){
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+    }
 }
