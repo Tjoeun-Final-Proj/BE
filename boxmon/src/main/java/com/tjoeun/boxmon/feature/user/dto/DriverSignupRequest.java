@@ -5,10 +5,12 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.time.LocalDate;
 
 @Getter
+@ToString
 public class DriverSignupRequest {
 
     @Email
@@ -37,5 +39,8 @@ public class DriverSignupRequest {
 
     @NotNull
     private String certNumber;
+
+    @NotNull
+    private Boolean accountStatus;
 
 }

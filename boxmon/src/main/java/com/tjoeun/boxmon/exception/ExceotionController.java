@@ -47,4 +47,19 @@ public class ExceotionController {
     public ResponseEntity<String> roleAccessDeniedException(RoleAccessDeniedException e){
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
     }
+
+    // 권한이 없을 때 403(Forbidden)으로 변환
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<String> DuplicateEmailException(DuplicateEmailException e){
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+    }
+
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleException(Exception e){
+        e.printStackTrace();
+        return ResponseEntity.internalServerError().body("알 수 없는 오류");
+    }
+
+
 }

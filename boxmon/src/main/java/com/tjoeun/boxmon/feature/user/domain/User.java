@@ -17,6 +17,7 @@ public class User {
     @Column(name = "user_id")
     private Long userId;
 
+
     @Column(nullable = false, unique = true)
     private String email;
 
@@ -48,12 +49,18 @@ public class User {
     @Column(nullable = false, name="user_type")
     protected UserType userType;
 
+    @Column(nullable = false, name="account_status")
+    private Boolean accountStatus;
+
+    @Column(nullable = false, name="is_delete")
+    private Boolean isDelete;
+
     protected User(){
 
     }
 
     //회원가입 형식
-    public User(String email, String password, String name, String phone, LocalDate birth, Boolean isPushEnabled, UserType userType, String businessNumber, String deviceToken){
+    public User(String email, String password, String name, String phone, LocalDate birth, Boolean isPushEnabled, UserType userType, String businessNumber, String deviceToken, Boolean accountStatus, Boolean isDelete){
         this.email = email;
         this.password = password;
         this.name = name;
@@ -64,6 +71,8 @@ public class User {
         this.userType = userType;
         this.businessNumber = businessNumber;
         this.deviceToken = deviceToken;
+        this.accountStatus = accountStatus;
+        this.isDelete = isDelete;
     }
 
 }

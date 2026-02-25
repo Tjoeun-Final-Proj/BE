@@ -2,6 +2,7 @@ package com.tjoeun.boxmon.feature.user.repository;
 
 
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
+import com.tjoeun.boxmon.feature.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,4 +13,7 @@ import java.util.Optional;
 public interface ShipperRepository extends JpaRepository<Shipper, Long> {
     // ID로 Shipper를 찾는 메서드
     Optional<Shipper> findById(Long id);
+
+    Optional<Shipper> findByUser(User user);
+
 }

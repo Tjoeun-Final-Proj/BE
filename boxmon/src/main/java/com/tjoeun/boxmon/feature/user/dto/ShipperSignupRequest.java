@@ -33,7 +33,10 @@ public class ShipperSignupRequest {
 
     private String businessNumber;
 
-    public ShipperSignupRequest(String email, String password, String name, String phone, LocalDate birth, Boolean isPushEnabled, UserType userType, String businessNumber) {
+    @NotNull
+    private Boolean accountStatus;
+
+    public ShipperSignupRequest(String email, String password, String name, String phone, LocalDate birth, Boolean isPushEnabled, UserType userType, String businessNumber, Boolean accountStatus) {
         this.email = email;
         this.password = password;
         this.name = name;
@@ -42,6 +45,7 @@ public class ShipperSignupRequest {
         this.isPushEnabled = isPushEnabled;
         this.userType = userType;
         this.businessNumber = businessNumber;
+        this.accountStatus = accountStatus;
     }
 
 

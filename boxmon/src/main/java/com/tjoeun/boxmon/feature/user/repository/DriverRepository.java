@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface DriverRepository extends JpaRepository<Driver, Long> {
     Optional<Driver> findByUser(User user);
+
 }
