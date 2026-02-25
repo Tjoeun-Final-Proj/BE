@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -49,11 +50,20 @@ public class NcpObjectStorageService implements ObjectStorageService {
 
     @Override
     public String uploadCargoPhoto(MultipartFile file) {
+        return uploadImage(file, "shipments/cargo");
+    }
+
+    @Override
+    public String uploadDropoffPhoto(MultipartFile file) {
+        return uploadImage(file, "shipments/dropoff");
+    }
+
+    private String uploadImage(MultipartFile file, String prefix) {
         // 파일 기본 검증(비어있는지/용량/MIME 타입)
         validateImageFile(file);
 
         String extension = resolveExtension(file);
-        String objectKey = generateCargoObjectKey(extension);
+        String objectKey = generateObjectKey(prefix, extension);
 
         try {
             // Object Storage에 객체 저장 후 key를 반환합니다.
@@ -61,6 +71,7 @@ public class NcpObjectStorageService implements ObjectStorageService {
                     .bucket(bucket)
                     .key(objectKey)
                     .contentType(file.getContentType())
+                    .acl(ObjectCannedACL.PUBLIC_READ)
                     .build();
 
             s3Client.putObject(request, RequestBody.fromBytes(file.getBytes()));
@@ -120,9 +131,9 @@ public class NcpObjectStorageService implements ObjectStorageService {
         return "jpg";
     }
 
-    private String generateCargoObjectKey(String extension) {
+    private String generateObjectKey(String prefix, String extension) {
         // 월 단위 prefix + UUID 조합으로 충돌 가능성을 낮춥니다.
         String yyyymm = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
-        return "shipments/cargo/" + yyyymm + "/" + UUID.randomUUID() + "." + extension;
+        return prefix + "/" + yyyymm + "/" + UUID.randomUUID() + "." + extension;
     }
 }

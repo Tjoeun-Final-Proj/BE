@@ -267,11 +267,18 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     @Override
-    public void completeTransport(Long driverId, Long shipmentId, String dropoffPhotoUrl) {
+    public void completeTransport(Long driverId, Long shipmentId, MultipartFile dropoffPhoto) {
         validateDriverAccess(driverId);
 
         Shipment shipment = shipmentRepository.findById(shipmentId)
                 .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
+
+        String uploadedDropoffPhotoKey = null;
+        String dropoffPhotoUrl = null;
+        if (dropoffPhoto != null && !dropoffPhoto.isEmpty()) {
+            uploadedDropoffPhotoKey = objectStorageService.uploadDropoffPhoto(dropoffPhoto);
+            dropoffPhotoUrl = objectStorageService.buildPublicUrl(uploadedDropoffPhotoKey);
+        }
 
         if (shipment.getShipmentStatus() == ShipmentStatus.DONE) {
             if (shipment.getDriver() == null || !shipment.getDriver().getDriverId().equals(driverId)) {
@@ -280,7 +287,14 @@ public class ShipmentServiceImpl implements ShipmentService {
             if (dropoffPhotoUrl != null && !dropoffPhotoUrl.isBlank()) {
                 shipment.setDropoffPhotoUrl(dropoffPhotoUrl);
             }
-            shipmentRepository.save(shipment);
+            try {
+                shipmentRepository.save(shipment);
+            } catch (RuntimeException e) {
+                if (uploadedDropoffPhotoKey != null) {
+                    objectStorageService.deleteObject(uploadedDropoffPhotoKey);
+                }
+                throw e;
+            }
             return;
         }
 
@@ -298,7 +312,14 @@ public class ShipmentServiceImpl implements ShipmentService {
             shipment.setDropoffPhotoUrl(dropoffPhotoUrl);
         }
         shipment.setSettlementStatus(SettlementStatus.READY);
-        shipmentRepository.save(shipment);
+        try {
+            shipmentRepository.save(shipment);
+        } catch (RuntimeException e) {
+            if (uploadedDropoffPhotoKey != null) {
+                objectStorageService.deleteObject(uploadedDropoffPhotoKey);
+            }
+            throw e;
+        }
 
         try {
             notificationUseCase.notifyTransportCompleted(shipmentId);

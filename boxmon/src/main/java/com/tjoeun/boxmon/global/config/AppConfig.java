@@ -48,6 +48,9 @@ public class AppConfig {
                 .region(Region.of(region))
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
                 .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
+                // AWS SDK v2(특히 2.30+ 계열)은 PutObject 시 체크섬 관련 헤더/계산을 기본으로 적용하는 경우가 있음.
+                // NCP Object Storage(S3 호환)에서는 이 체크섬 동작이 완전 호환되지 않아 403 AccessDenied가 발생할 수 있어,
+                // "필수일 때만" 체크섬을 계산/전송하도록 설정해 호환성 문제를 피한다.
                 .requestChecksumCalculation(RequestChecksumCalculation.WHEN_REQUIRED)
                 .build();
     }
