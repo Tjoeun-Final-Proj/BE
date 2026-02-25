@@ -65,7 +65,7 @@ public class ShipmentCreateRequest {
 
     private String description; // 특이사항
 
-    private String cargoPhotoUrl; // 화물 사진 URL
+    // 화물 이미지는 multipart 파트(cargoPhoto)로 별도 전달됩니다.
 
     private String companyName; // 회사명 (선택 입력)
 }

@@ -4,6 +4,7 @@ import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.*;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -19,7 +20,7 @@ public interface ShipmentService {
      * @param request 배송 생성 요청 DTO
      * @return 생성된 화물 ID
      */
-    Long createShipment(Long shipperId, ShipmentCreateRequest request);
+    Long createShipment(Long shipperId, ShipmentCreateRequest request, MultipartFile cargoPhoto);
 
     /**
      * 배차를 수락하여 요청 건에 배차 기사 정보를 부여하고 상태를 배차 완료로 변경합니다.

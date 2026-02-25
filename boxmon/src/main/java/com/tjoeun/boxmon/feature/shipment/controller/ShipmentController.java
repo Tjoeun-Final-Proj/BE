@@ -14,16 +14,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -50,13 +52,14 @@ public class ShipmentController {
     @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터")
     @ApiResponse(responseCode = "401", description = "인증 실패")
     @ApiResponse(responseCode = "500", description = "서버 오류")
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ShipmentCreateResponse> createShipment(
             Authentication authentication,
-            @Parameter(description = "배송 생성 요청 본문", required = true) @RequestBody @Valid ShipmentCreateRequest request
+            @Parameter(description = "배송 생성 요청 본문(JSON)", required = true) @RequestPart("request") @Valid ShipmentCreateRequest request,
+            @Parameter(description = "화물 사진 파일", required = false) @RequestPart(value = "cargoPhoto", required = false) MultipartFile cargoPhoto
     ) {
         Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
-        Long shipmentId = shipmentService.createShipment(shipperId, request);
+        Long shipmentId = shipmentService.createShipment(shipperId, request, cargoPhoto);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ShipmentCreateResponse(shipmentId));
     }
 
