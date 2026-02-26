@@ -71,6 +71,7 @@ public class NcpObjectStorageService implements ObjectStorageService {
                     .bucket(bucket)
                     .key(objectKey)
                     .contentType(file.getContentType())
+                    // 업로드된 파일을 누구나 읽을 수 있도록 공개 읽기 권한을 설정합니다. (브라우저 등에서 URL로 바로 접근 가능)
                     .acl(ObjectCannedACL.PUBLIC_READ)
                     .build();
 
@@ -120,14 +121,21 @@ public class NcpObjectStorageService implements ObjectStorageService {
         }
     }
 
+    /**
+     * 파일의 Content-Type을 분석하여 적절한 확장자를 반환합니다.
+     */
     private String resolveExtension(MultipartFile file) {
         String contentType = file.getContentType();
+
+        // PNG 이미지인 경우 png 확장자 반환
         if ("image/png".equalsIgnoreCase(contentType)) {
             return "png";
         }
+        // WebP 이미지인 경우 webp 확장자 반환
         if ("image/webp".equalsIgnoreCase(contentType)) {
             return "webp";
         }
+        // 그 외의 경우(주로 image/jpeg) 기본적으로 jpg 확장자 사용
         return "jpg";
     }
 
