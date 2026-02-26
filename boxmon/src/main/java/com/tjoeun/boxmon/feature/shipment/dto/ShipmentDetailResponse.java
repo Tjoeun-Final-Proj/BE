@@ -1,6 +1,5 @@
 package com.tjoeun.boxmon.feature.shipment.dto;
 
-import com.tjoeun.boxmon.feature.shipment.domain.CargoType;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -49,7 +48,7 @@ public class ShipmentDetailResponse {
     private LocalDateTime dropoffDesiredAt; // 희망 하차 시간
 
     // 6) 화물/차량 정보
-    private CargoType cargoType; // 화물 종류
+    private String cargoType; // 화물 종류(한글 설명)
     private String cargoVolume; // 화물 부피
     private Double cargoWeight; // 화물 무게
     private String vehicleType; // 차량 타입

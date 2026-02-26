@@ -192,7 +192,11 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
     List<Shipment> findByShipmentStatus(ShipmentStatus shipmentStatus);
 
+    List<Shipment> findByShipmentStatusNotOrderByCreatedAtDesc(ShipmentStatus shipmentStatus);
+
     Optional<Shipment> findByShipmentIdAndShipmentStatus(Long shipmentId, ShipmentStatus shipmentStatus);
+
+    Optional<Shipment> findByShipmentIdAndShipmentStatusNot(Long shipmentId, ShipmentStatus shipmentStatus);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM Shipment s WHERE s.shipmentId = :shipmentId")

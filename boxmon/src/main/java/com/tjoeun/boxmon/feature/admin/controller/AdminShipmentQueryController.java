@@ -75,13 +75,13 @@ public class AdminShipmentQueryController {
     }
 
     /**
-     * 배차(ASSIGNED) 화물 basic 목록을 조회합니다.
+     * 미배차(REQUESTED) 화물을 제외한 화물 basic 목록을 조회합니다.
      *
      * @param authentication 현재 인증된 관리자 정보 (관리자 ID 추출)
      * @return 배차 화물 basic 목록과 HTTP 200 OK 응답
      */
-    @Operation(summary = "관리자 배차 화물 basic 조회", description = "관리자 화면에서 배차 완료 화물의 기본 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "배차 화물 basic 조회 성공",
+    @Operation(summary = "관리자 미배차 화물 제외 basic 조회", description = "관리자 화면에서 미배차 화물을 제외한 화물의 기본 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "배차(요청 제외) 화물 basic 조회 성공",
             content = @Content(schema = @Schema(implementation = AdminAssignedShipmentBasicResponse.class)))
     @ApiResponse(responseCode = "401", description = "인증 실패")
     @ApiResponse(responseCode = "403", description = "관리자 권한 없음")
@@ -94,18 +94,18 @@ public class AdminShipmentQueryController {
     }
 
     /**
-     * 배차(ASSIGNED) 화물 detail 정보를 조회합니다.
+     * 미배차(REQUESTED) 화물을 제외한 화물 detail 정보를 조회합니다.
      *
      * @param authentication 현재 인증된 관리자 정보 (관리자 ID 추출)
      * @param shipmentId 조회할 화물 ID
      * @return 배차 화물 detail 정보와 HTTP 200 OK 응답
      */
-    @Operation(summary = "관리자 배차 화물 detail 조회", description = "관리자 화면에서 배차 완료 화물의 상세 정보를 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "배차 화물 detail 조회 성공",
+    @Operation(summary = "관리자 미배차 화물 제외 detail 조회", description = "관리자 화면에서 미배차 화물을 제외한 화물의 상세 정보를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "배차(요청 제외) 화물 detail 조회 성공",
             content = @Content(schema = @Schema(implementation = AdminAssignedShipmentDetailResponse.class)))
     @ApiResponse(responseCode = "401", description = "인증 실패")
     @ApiResponse(responseCode = "403", description = "관리자 권한 없음")
-    @ApiResponse(responseCode = "404", description = "배차 화물을 찾을 수 없음")
+    @ApiResponse(responseCode = "404", description = "미배차를 제외한 화물을 찾을 수 없음")
     @GetMapping("/assigned/detail/{shipmentId}")
     public ResponseEntity<AdminAssignedShipmentDetailResponse> getAssignedDetail(
             Authentication authentication,
