@@ -52,10 +52,10 @@ public class AdminShipmentServiceImpl implements AdminShipmentService {
 
     @Override
     public List<AdminAssignedShipmentBasicResponse> getAssignedBasic(Long adminId) {
-        // 관리자 권한 검증 후, 배차(ASSIGNED) 화물 목록을 basic 응답으로 변환한다.
+        // 관리자 권한 검증 후, 미배차(REQUESTED) 제외 화물 목록을 basic 응답으로 변환한다.
         validateAdminAccess(adminId);
 
-        List<Shipment> shipments = shipmentRepository.findByShipmentStatus(ShipmentStatus.ASSIGNED);
+        List<Shipment> shipments = shipmentRepository.findByShipmentStatusNotOrderByCreatedAtDesc(ShipmentStatus.REQUESTED);
         return shipments.stream()
                 .map(this::toAssignedBasicResponse)
                 .collect(Collectors.toList());
@@ -63,11 +63,11 @@ public class AdminShipmentServiceImpl implements AdminShipmentService {
 
     @Override
     public AdminAssignedShipmentDetailResponse getAssignedDetail(Long adminId, Long shipmentId) {
-        // 관리자 권한 검증 후, 상태가 ASSIGNED인 단건만 조회해 detail 응답으로 변환한다.
+        // 관리자 권한 검증 후, 미배차(REQUESTED) 제외 상태에서 단건을 조회해 detail 응답으로 변환한다.
         validateAdminAccess(adminId);
 
-        Shipment shipment = shipmentRepository.findByShipmentIdAndShipmentStatus(shipmentId, ShipmentStatus.ASSIGNED)
-                .orElseThrow(() -> new ShipmentNotFoundException("배차된 화물을 찾을 수 없습니다."));
+        Shipment shipment = shipmentRepository.findByShipmentIdAndShipmentStatusNot(shipmentId, ShipmentStatus.REQUESTED)
+                .orElseThrow(() -> new ShipmentNotFoundException("배차(요청제외) 화물을 찾을 수 없습니다."));
 
         return toAssignedDetailResponse(shipment);
     }
