@@ -1,7 +1,6 @@
 package com.tjoeun.boxmon.feature.payment.domain;
 
 import com.tjoeun.boxmon.feature.payment.exception.InvalidPaymentStatusException;
-import com.tjoeun.boxmon.feature.shipment.domain.PaymentStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -56,16 +55,25 @@ public class Payment {
     }
     
     public void approve() throws InvalidPaymentStatusException {
-        if(paymentStatus.equals(PaymentStatus.PAID))
-            throw new InvalidPaymentStatusException("이미 결제가 승인되었습니다.");
-        paymentStatus = PaymentStatus.PAID;
-        approvedAt = LocalDateTime.now();
+        switch (paymentStatus) {
+            case PAID-> throw new InvalidPaymentStatusException("이미 결제가 승인되었습니다.");
+            case CANCELED -> throw new InvalidPaymentStatusException("이미 취소된 결제입니다.");
+            case UNPAID -> {
+                paymentStatus = PaymentStatus.PAID;
+                approvedAt = LocalDateTime.now();
+            }
+        }
     }
     
     public void cancel() throws InvalidPaymentStatusException {
-        if(paymentStatus.equals(PaymentStatus.UNPAID))
-            throw new InvalidPaymentStatusException("이미 결제가 취소 되었거나 아직 결제가 승인되지 않았습니다.");
-        paymentStatus = PaymentStatus.UNPAID;
-        canceledAt = LocalDateTime.now();
+        switch (paymentStatus) {
+            case UNPAID-> throw new InvalidPaymentStatusException("아직 결제가 승인되지 않았습니다.");
+            case CANCELED -> throw new InvalidPaymentStatusException("이미 취소된 결제입니다.");
+            case PAID -> throw new IllegalStateException("있을 수 없는 상태전이가 발생했습니다. 시도된 상태 전이 PAID -> CANCELED.");
+            case CANCEL_PROGRESS -> {
+                paymentStatus = PaymentStatus.UNPAID;
+                canceledAt = LocalDateTime.now();
+            }
+        }
     }
 }
