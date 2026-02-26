@@ -93,6 +93,8 @@ public interface ShipmentService {
 
     List<UnassignedShipmentResponse> getUnassignedShipments();
 
+    List<UnassignedShipmentResponse> getMyUnassignedShipments(Long shipperId);
+
     /**
      * 특정 화주의 정산 요약 정보를 조회합니다.
      * @param shipperId 화주 ID

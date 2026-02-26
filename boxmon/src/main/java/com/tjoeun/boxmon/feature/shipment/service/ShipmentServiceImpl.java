@@ -1039,6 +1039,17 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<UnassignedShipmentResponse> getMyUnassignedShipments(Long shipperId) {
+        validateShipperAccess(shipperId);
+        List<Shipment> shipments = shipmentRepository
+                .findByShipper_ShipperIdAndShipmentStatusOrderByCreatedAtDesc(shipperId, ShipmentStatus.REQUESTED);
+        return shipments.stream()
+                .map(this::toUnassignedShipmentResponse)
+                .collect(Collectors.toList());
+    }
+
     private UnassignedShipmentResponse toUnassignedShipmentResponse(Shipment shipment) {
         return UnassignedShipmentResponse.builder()
                 .shipmentId(shipment.getShipmentId())
