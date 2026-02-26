@@ -10,9 +10,6 @@ import java.time.LocalDateTime;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"pay"})
-})
 public class PaymentLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
