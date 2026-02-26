@@ -236,4 +236,21 @@ public class ShipmentController {
         List<UnassignedShipmentResponse> response = shipmentService.getUnassignedShipments();
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * 인증된 화주가 등록한 미배차 화물 목록을 조회합니다.
+     *
+     * @param authentication 현재 인증된 화주 정보
+     * @return 내 미배차 화물 목록과 HTTP 200 OK 응답
+     */
+    @Operation(summary = "내 미배차 화물 목록 조회", description = "인증된 화주가 등록한 REQUESTED 상태 화물 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "내 미배차 화물 목록 조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "화주 권한 없음")
+    @GetMapping("/my/unassigned")
+    public ResponseEntity<List<UnassignedShipmentResponse>> getMyUnassignedShipments(Authentication authentication) {
+        Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
+        List<UnassignedShipmentResponse> response = shipmentService.getMyUnassignedShipments(shipperId);
+        return ResponseEntity.ok(response);
+    }
 }
