@@ -65,7 +65,7 @@ public class Payment {
         }
     }
     
-    public void cancel() throws InvalidPaymentStatusException {
+    public void cancel() throws InvalidPaymentStatusException, IllegalStateException {
         switch (paymentStatus) {
             case UNPAID-> throw new InvalidPaymentStatusException("아직 결제가 승인되지 않았습니다.");
             case CANCELED -> throw new InvalidPaymentStatusException("이미 취소된 결제입니다.");
@@ -74,6 +74,14 @@ public class Payment {
                 paymentStatus = PaymentStatus.UNPAID;
                 canceledAt = LocalDateTime.now();
             }
+        }
+    }
+    
+    public void rollbackCancel() throws IllegalStateException {
+        if (paymentStatus.equals(PaymentStatus.CANCEL_PROGRESS)) {
+            paymentStatus = PaymentStatus.PAID;
+        } else {
+            throw new IllegalStateException(String.format("상태 전이 충돌. 시도된 상태전이 %s -> PAID", paymentStatus));
         }
     }
 }

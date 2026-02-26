@@ -91,6 +91,10 @@ public class PaymentServiceImpl implements PaymentConfirmUseCase, PaymentCancelU
             //결제 취소 거절 로그 기록
             PaymentLog paymentLog = mapper.logCancelFailed(payment);
             paymentLogRepository.save(paymentLog);
+            
+            //결제 완료 상태로 복귀
+            payment.rollbackCancel();
+            paymentRepository.save(payment);
         }
 
         //결제 취소 로그 기록
