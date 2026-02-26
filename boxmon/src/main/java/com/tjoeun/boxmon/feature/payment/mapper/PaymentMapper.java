@@ -4,7 +4,7 @@ import com.tjoeun.boxmon.feature.payment.domain.Payment;
 import com.tjoeun.boxmon.feature.payment.domain.PaymentLog;
 import com.tjoeun.boxmon.feature.payment.domain.PaymentEvent;
 import com.tjoeun.boxmon.feature.payment.dto.ConfirmPaymentRequest;
-import com.tjoeun.boxmon.feature.shipment.domain.PaymentStatus;
+import com.tjoeun.boxmon.feature.payment.domain.PaymentStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +40,22 @@ public class PaymentMapper {
         return PaymentLog.builder()
                 .payment(payment)
                 .eventType(PaymentEvent.REJECTED)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+    
+    public PaymentLog logCanceled(Payment payment) {
+        return PaymentLog.builder()
+                .payment(payment)
+                .eventType(PaymentEvent.CANCELED)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+    
+    public PaymentLog logCancelFailed(Payment payment) {
+        return PaymentLog.builder()
+                .payment(payment)
+                .eventType(PaymentEvent.CANCEL_FAILED)
                 .createdAt(LocalDateTime.now())
                 .build();
     }

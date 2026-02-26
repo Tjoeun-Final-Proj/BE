@@ -21,7 +21,7 @@ public class PaymentExceptionController {
     
     //결제 상태 전이 실패시 
     @ExceptionHandler(InvalidPaymentStatusException.class)
-    public ResponseEntity<String> paymentConfirmConflictException(InvalidPaymentStatusException e){
+    public ResponseEntity<String> invalidPaymentStatusException(InvalidPaymentStatusException e){
         return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
     }
 }
