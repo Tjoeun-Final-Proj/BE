@@ -24,6 +24,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+/**
+ * Shipment 조회(Query) 계열을 담당하는 서비스.
+ * 상세 조회, 미배차 목록 조회, ETA/거리 계산을 처리합니다.
+ */
 public class ShipmentQueryService {
 
     private final ShipmentRepository shipmentRepository;

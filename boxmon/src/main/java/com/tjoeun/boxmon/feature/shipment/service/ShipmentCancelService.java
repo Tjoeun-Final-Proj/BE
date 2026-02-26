@@ -19,6 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+/**
+ * Shipment 취소/철회 흐름을 담당하는 서비스.
+ * 상호 취소 확정, 동시성 제어, 결제 취소 연동을 처리합니다.
+ */
 public class ShipmentCancelService {
 
     private final ShipmentRepository shipmentRepository;

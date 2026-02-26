@@ -26,6 +26,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+/**
+ * Shipment 정산 계열을 담당하는 서비스.
+ * 정산 요약/목록/상세 조회와 정산 접근 권한 검증을 처리합니다.
+ */
 public class ShipmentSettlementService {
 
     private final ShipmentRepository shipmentRepository;

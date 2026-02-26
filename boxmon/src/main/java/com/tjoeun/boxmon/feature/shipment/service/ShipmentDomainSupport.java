@@ -10,6 +10,10 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Component;
 
 @Component
+/**
+ * Shipment 도메인 공통 지원 컴포넌트.
+ * 권한 검증, 연월 파라미터 검증, 좌표 변환, 회사명 정규화를 제공합니다.
+ */
 public class ShipmentDomainSupport {
 
     private final ShipperRepository shipperRepository;

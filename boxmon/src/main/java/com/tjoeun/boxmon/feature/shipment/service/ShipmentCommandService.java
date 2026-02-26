@@ -37,6 +37,10 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+/**
+ * Shipment 명령(Command) 계열을 담당하는 서비스.
+ * 화물 생성과 상태 전이(배차 수락/운송 시작/운송 완료)를 처리합니다.
+ */
 public class ShipmentCommandService {
 
     private final ShipmentRepository shipmentRepository;
