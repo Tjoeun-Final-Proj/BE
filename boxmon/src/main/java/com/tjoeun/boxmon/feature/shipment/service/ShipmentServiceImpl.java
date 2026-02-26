@@ -10,6 +10,7 @@ import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.*;
 import com.tjoeun.boxmon.feature.notification.service.NotificationUseCase;
+import com.tjoeun.boxmon.feature.payment.service.PaymentCancelUseCase;
 import com.tjoeun.boxmon.global.storage.ObjectStorageService;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.feature.user.domain.Driver;
@@ -59,6 +60,7 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final DriverRepository driverRepository;
     private final SystemSettingService systemSettingService;
     private final NotificationUseCase notificationUseCase;
+    private final PaymentCancelUseCase paymentCancelUseCase;
     private final NaverDirectionsApiClient naverDirectionsApiClient;
     private final ObjectStorageService objectStorageService;
 
@@ -373,6 +375,7 @@ public class ShipmentServiceImpl implements ShipmentService {
             if (isBothCancelRequested(shipment)) {
                 finalizeCancellation(shipment);
                 shipmentRepository.save(shipment);
+                cancelPaymentOnMutualCancellation(shipmentId);
                 return;
             }
 
@@ -724,9 +727,18 @@ public class ShipmentServiceImpl implements ShipmentService {
         shipment.setShipmentStatus(ShipmentStatus.CANCELED);
         shipment.setShipperCancelToggle(false);
         shipment.setDriverCancelToggle(false);
+    }
 
-        // 결제 취소 연동 예정
-        // TODO: Toss 결제 취소 API 연동 후 실제 환불 처리
+    private void cancelPaymentOnMutualCancellation(Long shipmentId) {
+        try {
+            paymentCancelUseCase.cancelPayment(shipmentId, "화주/차주 상호 취소 승인으로 운송 취소");
+        } catch (IllegalArgumentException e) {
+            // 결제 이력이 없는 운송건은 환불 대상이 아니므로 취소 흐름은 유지합니다.
+            log.info("결제 이력이 없어 결제 취소를 생략합니다. shipmentId={}", shipmentId);
+        } catch (RuntimeException e) {
+            // 결제 취소 연동 실패로 배송 취소 요청 자체를 깨지 않도록 로그만 남깁니다.
+            log.warn("배송 취소는 확정됐지만 결제 취소 연동에 실패했습니다. shipmentId={}", shipmentId, e);
+        }
     }
 
     @Override
