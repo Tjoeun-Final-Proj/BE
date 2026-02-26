@@ -32,6 +32,7 @@ public class PaymentServiceImpl implements PaymentConfirmUseCase, PaymentCancelU
     private final PaymentMapper mapper;
     private final PaymentRepository paymentRepository;
 
+    //결제 승인
     @Override
     public void confirmPayment(ConfirmPaymentRequest request) {
         //결제 대기 상태 생성
@@ -67,6 +68,8 @@ public class PaymentServiceImpl implements PaymentConfirmUseCase, PaymentCancelU
         paymentRepository.save(payment);
     }
     
+    //결제 취소
+    @Override
     @Transactional
     public void cancelPayment(Long shipmentId, String cancelReason) {
         //취소할 결제 정보 확인
@@ -88,6 +91,10 @@ public class PaymentServiceImpl implements PaymentConfirmUseCase, PaymentCancelU
             //결제 취소 거절 로그 기록
             PaymentLog paymentLog = mapper.logCancelFailed(payment);
             paymentLogRepository.save(paymentLog);
+            
+            //결제 완료 상태로 복귀
+            payment.rollbackCancel();
+            paymentRepository.save(payment);
         }
 
         //결제 취소 로그 기록
