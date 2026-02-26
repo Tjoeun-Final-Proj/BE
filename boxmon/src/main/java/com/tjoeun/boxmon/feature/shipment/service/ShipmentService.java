@@ -4,6 +4,7 @@ import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.*;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -19,7 +20,7 @@ public interface ShipmentService {
      * @param request 배송 생성 요청 DTO
      * @return 생성된 화물 ID
      */
-    Long createShipment(Long shipperId, ShipmentCreateRequest request);
+    Long createShipment(Long shipperId, ShipmentCreateRequest request, MultipartFile cargoPhoto);
 
     /**
      * 배차를 수락하여 요청 건에 배차 기사 정보를 부여하고 상태를 배차 완료로 변경합니다.
@@ -41,13 +42,13 @@ public interface ShipmentService {
     /**
      * 드라이버가 배차를 완료 처리합니다.
      * IN_TRANSIT 상태에서만 완료 처리할 수 있습니다.
-     * 완료 시 하차 사진 URL(예: AWS S3 업로드 URL)을 저장합니다.
+     * 완료 시 하차 사진 파일을 업로드하고 URL을 저장합니다.
      *
      * @param driverId 배차된 드라이버 ID
      * @param shipmentId 배송 ID
-     * @param dropoffPhotoUrl 하차 완료 사진 URL(미연결 상태에서는 null 허용)
+     * @param dropoffPhoto 하차 완료 사진 파일(선택)
      */
-    void completeTransport(Long driverId, Long shipmentId, String dropoffPhotoUrl);
+    void completeTransport(Long driverId, Long shipmentId, MultipartFile dropoffPhoto);
 
     /**
      * 배송 취소를 요청합니다.

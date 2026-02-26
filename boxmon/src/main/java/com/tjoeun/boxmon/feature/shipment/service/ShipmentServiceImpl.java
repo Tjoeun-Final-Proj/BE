@@ -10,6 +10,7 @@ import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.*;
 import com.tjoeun.boxmon.feature.notification.service.NotificationUseCase;
+import com.tjoeun.boxmon.global.storage.ObjectStorageService;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.feature.user.domain.Driver;
 import com.tjoeun.boxmon.feature.user.domain.Shipper;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.web.multipart.MultipartFile;
 import org.locationtech.jts.geom.Coordinate; // JTS 좌표 객체
 import org.locationtech.jts.geom.GeometryFactory; // JTS 지오메트리 객체 생성 팩토리
 
@@ -58,6 +60,7 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final SystemSettingService systemSettingService;
     private final NotificationUseCase notificationUseCase;
     private final NaverDirectionsApiClient naverDirectionsApiClient;
+    private final ObjectStorageService objectStorageService;
 
     // JTS(Java Topology Suite) 지오메트리 객체 생성을 위한 팩토리.
     // GPS 표준 좌표계(WGS84)인 SRID 4326을 사용하도록 설정.
@@ -116,7 +119,7 @@ public class ShipmentServiceImpl implements ShipmentService {
      * @throws UserNotFoundException 주어진 화주 ID에 해당하는 화주를 찾을 수 없을 때 발생
      */
     @Override
-    public Long createShipment(Long shipperId, ShipmentCreateRequest request) {
+    public Long createShipment(Long shipperId, ShipmentCreateRequest request, MultipartFile cargoPhoto) {
         // 1. 화주 정보 조회: 요청된 shipperId로 화주 엔티티를 찾고, 없으면 예외 발생
         Shipper shipper = shipperRepository.findById(shipperId)
                 .orElseThrow(() -> new UserNotFoundException("화주를 찾을 수 없습니다."));
@@ -131,6 +134,15 @@ public class ShipmentServiceImpl implements ShipmentService {
         Double estimatedDistance = calculateDistance(pickupPoint, dropoffPoint,
                 Optional.ofNullable(waypoint1Point), Optional.ofNullable(waypoint2Point));
 
+
+        // 화물 생성 요청에 이미지가 포함되면 백엔드에서 Object Storage에 직접 업로드합니다.
+        // 업로드 성공 시 DB에는 외부 접근 가능한 URL만 저장합니다.
+        String uploadedCargoPhotoKey = null;
+        String cargoPhotoUrl = null;
+        if (cargoPhoto != null && !cargoPhoto.isEmpty()) {
+            uploadedCargoPhotoKey = objectStorageService.uploadCargoPhoto(cargoPhoto);
+            cargoPhotoUrl = objectStorageService.buildPublicUrl(uploadedCargoPhotoKey);
+        }
 
         // 4. 배송 초기 상태 및 비용 계산:
         //    - 배송 상태를 '요청됨'으로 초기화
@@ -166,15 +178,23 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .needRefrigerate(request.getNeedRefrigerate())
                 .needFreeze(request.getNeedFreeze())
                 .description(request.getDescription())
-                .cargoPhotoUrl(request.getCargoPhotoUrl())
+                .cargoPhotoUrl(cargoPhotoUrl)
                 .companyName(normalizeCompanyName(request.getCompanyName()))
                 .shipmentStatus(shipmentStatus)
                 .settlementStatus(SettlementStatus.INELIGIBLE) // 초기 정산 상태는 '정산 대상 아님'
                 .build();
 
         // 6. 생성된 Shipment 엔티티를 데이터베이스에 저장
-        Shipment savedShipment = shipmentRepository.save(shipment);
-        return savedShipment.getShipmentId();
+        try {
+            Shipment savedShipment = shipmentRepository.save(shipment);
+            return savedShipment.getShipmentId();
+        } catch (RuntimeException e) {
+            // 업로드 후 DB 저장이 실패하면 고아 파일이 남지 않도록 보상 삭제를 수행합니다.
+            if (uploadedCargoPhotoKey != null) {
+                objectStorageService.deleteObject(uploadedCargoPhotoKey);
+            }
+            throw e;
+        }
     }
 
     /**
@@ -247,11 +267,18 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     @Override
-    public void completeTransport(Long driverId, Long shipmentId, String dropoffPhotoUrl) {
+    public void completeTransport(Long driverId, Long shipmentId, MultipartFile dropoffPhoto) {
         validateDriverAccess(driverId);
 
         Shipment shipment = shipmentRepository.findById(shipmentId)
                 .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
+
+        String uploadedDropoffPhotoKey = null;
+        String dropoffPhotoUrl = null;
+        if (dropoffPhoto != null && !dropoffPhoto.isEmpty()) {
+            uploadedDropoffPhotoKey = objectStorageService.uploadDropoffPhoto(dropoffPhoto);
+            dropoffPhotoUrl = objectStorageService.buildPublicUrl(uploadedDropoffPhotoKey);
+        }
 
         if (shipment.getShipmentStatus() == ShipmentStatus.DONE) {
             if (shipment.getDriver() == null || !shipment.getDriver().getDriverId().equals(driverId)) {
@@ -260,7 +287,14 @@ public class ShipmentServiceImpl implements ShipmentService {
             if (dropoffPhotoUrl != null && !dropoffPhotoUrl.isBlank()) {
                 shipment.setDropoffPhotoUrl(dropoffPhotoUrl);
             }
-            shipmentRepository.save(shipment);
+            try {
+                shipmentRepository.save(shipment);
+            } catch (RuntimeException e) {
+                if (uploadedDropoffPhotoKey != null) {
+                    objectStorageService.deleteObject(uploadedDropoffPhotoKey);
+                }
+                throw e;
+            }
             return;
         }
 
@@ -278,7 +312,14 @@ public class ShipmentServiceImpl implements ShipmentService {
             shipment.setDropoffPhotoUrl(dropoffPhotoUrl);
         }
         shipment.setSettlementStatus(SettlementStatus.READY);
-        shipmentRepository.save(shipment);
+        try {
+            shipmentRepository.save(shipment);
+        } catch (RuntimeException e) {
+            if (uploadedDropoffPhotoKey != null) {
+                objectStorageService.deleteObject(uploadedDropoffPhotoKey);
+            }
+            throw e;
+        }
 
         try {
             notificationUseCase.notifyTransportCompleted(shipmentId);

@@ -59,6 +59,9 @@ dependencies {
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("org.springframework.boot:spring-boot-starter-restclient")
 
+    //Naver Cloud Platform Object Storage를 위한 의존성
+    implementation("software.amazon.awssdk:s3:2.32.24")
+
     //swagger-ui 자동 생성
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1")
     
