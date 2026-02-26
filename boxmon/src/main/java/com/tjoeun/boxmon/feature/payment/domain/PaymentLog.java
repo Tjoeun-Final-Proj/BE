@@ -1,29 +1,44 @@
 package com.tjoeun.boxmon.feature.payment.domain;
 
-import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @NoArgsConstructor
-@Builder
 @AllArgsConstructor
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"pay"})
+})
 public class PaymentLog {
     @Id
-    private String paymentKey;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "logId")
+    private Long logId;
     
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "shipment_id", nullable = false)
-    private Shipment shipment;
+    @JoinColumn(name = "payment_id", nullable = false)
+    private Payment payment;
     
-    @Setter
-    private PaymentStatus status;
+    @Column(name = "event_type", nullable = false)
+    private PaymentEvent eventType;
     
-    @Column(name = "update_time")
-    private LocalDateTime updateTime;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+    
+    @PrePersist
+    public void prePersist() {
+        createdAt = LocalDateTime.now();
+    }
+
+
+    @Builder
+    public PaymentLog(Payment payment, PaymentEvent eventType, LocalDateTime createdAt) {
+        this.payment = payment;
+        this.eventType = eventType;
+        this.createdAt = createdAt;
+    }
 }

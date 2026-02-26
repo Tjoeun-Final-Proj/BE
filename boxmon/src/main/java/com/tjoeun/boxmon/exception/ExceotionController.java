@@ -60,6 +60,4 @@ public class ExceotionController {
         e.printStackTrace();
         return ResponseEntity.internalServerError().body("알 수 없는 오류");
     }
-
-
 }
