@@ -1,11 +1,14 @@
 package com.tjoeun.boxmon.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Order(Ordered.LOWEST_PRECEDENCE)
 @Slf4j
 @RestControllerAdvice
 public class ExceotionController {
@@ -46,11 +49,5 @@ public class ExceotionController {
     @ExceptionHandler(RoleAccessDeniedException.class)
     public ResponseEntity<String> roleAccessDeniedException(RoleAccessDeniedException e){
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-    }
-    
-    //같은 결제에 대한 중복 승인 요청의 충돌처리 -> 409(conflict)
-    @ExceptionHandler(PaymentConfirmConflictException.class)
-    public ResponseEntity<String> paymentConfirmConflictException(PaymentConfirmConflictException e){
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
     }
 }

@@ -1,5 +1,6 @@
 package com.tjoeun.boxmon.feature.payment.domain;
 
+import com.tjoeun.boxmon.feature.payment.exception.InvalidPaymentStatusException;
 import com.tjoeun.boxmon.feature.shipment.domain.PaymentStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import jakarta.persistence.*;
@@ -54,16 +55,16 @@ public class Payment {
         this.canceledAt = canceledAt;
     }
     
-    public void approve() throws IllegalStateException {
+    public void approve() throws InvalidPaymentStatusException {
         if(paymentStatus.equals(PaymentStatus.PAID))
-            throw new IllegalStateException("이미 결제가 승인되었습니다.");
+            throw new InvalidPaymentStatusException("이미 결제가 승인되었습니다.");
         paymentStatus = PaymentStatus.PAID;
         approvedAt = LocalDateTime.now();
     }
     
-    public void cancel() throws IllegalStateException {
+    public void cancel() throws InvalidPaymentStatusException {
         if(paymentStatus.equals(PaymentStatus.UNPAID))
-            throw new IllegalStateException("이미 결제가 취소 되었거나 아직 결제가 승인되지 않았습니다.");
+            throw new InvalidPaymentStatusException("이미 결제가 취소 되었거나 아직 결제가 승인되지 않았습니다.");
         paymentStatus = PaymentStatus.UNPAID;
         canceledAt = LocalDateTime.now();
     }
