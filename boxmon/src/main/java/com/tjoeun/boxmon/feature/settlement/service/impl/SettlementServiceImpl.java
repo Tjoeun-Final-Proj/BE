@@ -1,7 +1,7 @@
-package com.tjoeun.boxmon.feature.settlement.impl;
+package com.tjoeun.boxmon.feature.settlement.service.impl;
 
 import com.tjoeun.boxmon.global.client.TossApiClient;
-import com.tjoeun.boxmon.feature.settlement.DriverRegisterUsecase;
+import com.tjoeun.boxmon.feature.settlement.service.DriverRegisterUsecase;
 import com.tjoeun.boxmon.feature.user.domain.Driver;
 import com.tjoeun.boxmon.feature.user.domain.User;
 import lombok.RequiredArgsConstructor;

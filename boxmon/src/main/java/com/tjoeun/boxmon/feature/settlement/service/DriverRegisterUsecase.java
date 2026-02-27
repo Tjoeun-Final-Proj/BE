@@ -1,4 +1,4 @@
-package com.tjoeun.boxmon.feature.settlement;
+package com.tjoeun.boxmon.feature.settlement.service;
 
 import com.tjoeun.boxmon.feature.user.domain.Driver;
 
