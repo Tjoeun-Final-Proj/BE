@@ -1,0 +1,7 @@
+package com.tjoeun.boxmon.feature.admin.repository;
+
+import com.tjoeun.boxmon.feature.admin.domain.EventLog;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface EventLogRepository extends JpaRepository<EventLog, Long> {
+}
