@@ -1,4 +1,4 @@
-package com.tjoeun.boxmon.feature.payment.client;
+package com.tjoeun.boxmon.global.client;
 
 import com.tjoeun.boxmon.exception.ExternalServiceException;
 import lombok.extern.slf4j.Slf4j;
@@ -90,6 +90,7 @@ public class TossApiClient {
             throw new ExternalServiceException("토스 서버 통신 실패. 응답: " + result.getBody());
     }
     
+    //TODO JWE로 요청 암호화 필요
     //차주의 셀러등록 요청
     public void registerDriver(String driverId, String name, String email, String phone, String bankCode, String accountNumber, String accountHolderName){
         log.info("차주의 셀러등록을 요청합니다...");
