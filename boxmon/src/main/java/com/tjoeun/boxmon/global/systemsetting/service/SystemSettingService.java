@@ -1,4 +1,4 @@
-package com.tjoeun.boxmon.feature.admin.service;
+package com.tjoeun.boxmon.global.systemsetting.service;
 
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeSettingResponse;
 

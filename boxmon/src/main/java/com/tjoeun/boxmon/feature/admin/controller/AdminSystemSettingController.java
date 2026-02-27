@@ -2,7 +2,7 @@ package com.tjoeun.boxmon.feature.admin.controller;
 
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeSettingResponse;
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeSettingUpdateRequest;
-import com.tjoeun.boxmon.feature.admin.service.SystemSettingService;
+import com.tjoeun.boxmon.global.systemsetting.service.SystemSettingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
