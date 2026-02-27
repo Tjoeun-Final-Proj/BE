@@ -82,6 +82,9 @@ public class PaymentServiceImpl implements PaymentConfirmUseCase, PaymentCancelU
             log.warn("결제 취소 상태 전이 실패. 다른 스레드에서 이미 결제 취소를 진행중인것 같습니다. 결제 취소 요청을 무시하고 즉시 성공으로 응답합니다.");
             return;
         }
+
+        payment = paymentRepository.findByShipment_ShipmentId(shipmentId)
+                .orElseThrow(() -> new IllegalArgumentException("취소할 결제정보를 찾을 수 없습니다."));
         
         //결제 취소 요청
         try {
