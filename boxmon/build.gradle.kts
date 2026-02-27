@@ -67,6 +67,9 @@ dependencies {
     
     //Firebase Cloud Messaging
     implementation("com.google.firebase:firebase-admin:9.2.0")
+    
+    //JWE
+    implementation("com.nimbusds:nimbus-jose-jwt:9.40")
 }
 
 tasks.withType<Test> {

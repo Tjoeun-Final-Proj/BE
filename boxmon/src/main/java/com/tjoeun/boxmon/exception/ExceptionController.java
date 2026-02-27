@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
 @RestControllerAdvice
-public class ExceotionController {
+public class ExceptionController {
     // 사용자 미존재 에러를 400(Bad Request)으로 변환
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<String> handler1(UserNotFoundException e){
