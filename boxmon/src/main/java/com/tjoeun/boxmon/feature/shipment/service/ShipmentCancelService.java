@@ -155,15 +155,7 @@ public class ShipmentCancelService {
     }
 
     private void cancelPaymentOnMutualCancellation(Long shipmentId) {
-        try {
-            paymentCancelUseCase.cancelPayment(shipmentId, "화주/차주 상호 취소 승인으로 운송 취소");
-        } catch (IllegalArgumentException e) {
-            // 결제 이력이 없는 운송건은 취소 흐름을 유지하고 결제 취소만 생략
-            log.info("결제 이력이 없어 결제 취소를 생략합니다. shipmentId={}", shipmentId);
-        } catch (RuntimeException e) {
-            // 결제 취소 연동 실패로 배송 취소를 롤백하지 않도록 로그만 남김
-            log.warn("배송 취소는 확정됐지만 결제 취소 연동에 실패했습니다. shipmentId={}", shipmentId, e);
-        }
+        paymentCancelUseCase.cancelPayment(shipmentId, "화주/차주 상호 취소 승인으로 운송 취소");
     }
 
     private enum UserRoleInShipment {

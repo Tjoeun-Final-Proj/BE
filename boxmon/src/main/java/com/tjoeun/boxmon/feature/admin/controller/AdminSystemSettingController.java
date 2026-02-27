@@ -1,5 +1,6 @@
 package com.tjoeun.boxmon.feature.admin.controller;
 
+import com.tjoeun.boxmon.feature.admin.dto.AdminFeeChangeHistoryResponse;
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeSettingResponse;
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeSettingUpdateRequest;
 import com.tjoeun.boxmon.global.systemsetting.service.SystemSettingService;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @Tag(name = "관리자 설정", description = "관리자 전역 설정 관련 API")
 @RestController
@@ -46,5 +49,15 @@ public class AdminSystemSettingController {
     ) {
         Long adminId = Long.valueOf(authentication.getPrincipal().toString());
         return ResponseEntity.ok(systemSettingService.updateFeeSetting(adminId, request.getValue()));
+    }
+
+    @Operation(summary = "수수료율 변경 이력 조회", description = "수수료율 변경 이벤트 이력을 최신순으로 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "관리자 권한 없음")
+    @GetMapping("/fee/history")
+    public ResponseEntity<List<AdminFeeChangeHistoryResponse>> getFeeSettingHistory(Authentication authentication) {
+        Long adminId = Long.valueOf(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(systemSettingService.getFeeSettingHistory(adminId));
     }
 }
