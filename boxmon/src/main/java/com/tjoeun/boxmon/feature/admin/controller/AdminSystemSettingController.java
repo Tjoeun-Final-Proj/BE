@@ -1,6 +1,7 @@
 package com.tjoeun.boxmon.feature.admin.controller;
 
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeChangeHistoryResponse;
+import com.tjoeun.boxmon.feature.admin.dto.AdminFeeGraphResponse;
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeSettingResponse;
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeSettingUpdateRequest;
 import com.tjoeun.boxmon.global.systemsetting.service.SystemSettingService;
@@ -59,5 +60,15 @@ public class AdminSystemSettingController {
     public ResponseEntity<List<AdminFeeChangeHistoryResponse>> getFeeSettingHistory(Authentication authentication) {
         Long adminId = Long.valueOf(authentication.getPrincipal().toString());
         return ResponseEntity.ok(systemSettingService.getFeeSettingHistory(adminId));
+    }
+
+    @Operation(summary = "2주 수수료율 그래프 조회", description = "최근 14일 수수료율 그래프 데이터를 일 단위로 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "관리자 권한 없음")
+    @GetMapping("/fee/graph/2weeks")
+    public ResponseEntity<AdminFeeGraphResponse> getFeeRateGraphForLast2Weeks(Authentication authentication) {
+        Long adminId = Long.valueOf(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(systemSettingService.getFeeRateGraphForLast2Weeks(adminId));
     }
 }

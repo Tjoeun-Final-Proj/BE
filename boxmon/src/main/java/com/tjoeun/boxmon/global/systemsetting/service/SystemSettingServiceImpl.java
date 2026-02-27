@@ -8,6 +8,8 @@ import com.tjoeun.boxmon.feature.admin.domain.Admin;
 import com.tjoeun.boxmon.feature.admin.domain.AdminEventType;
 import com.tjoeun.boxmon.feature.admin.domain.EventLog;
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeChangeHistoryResponse;
+import com.tjoeun.boxmon.feature.admin.dto.AdminFeeGraphPointResponse;
+import com.tjoeun.boxmon.feature.admin.dto.AdminFeeGraphResponse;
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeSettingResponse;
 import com.tjoeun.boxmon.feature.admin.repository.AdminRepository;
 import com.tjoeun.boxmon.feature.admin.repository.EventLogRepository;
@@ -20,7 +22,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -31,6 +40,9 @@ public class SystemSettingServiceImpl implements SystemSettingService {
 
     private static final String FEE_SETTING_ID = "fee";
     private static final BigDecimal DEFAULT_FEE_RATE = new BigDecimal("0.1");
+    private static final int GRAPH_DAYS = 14;
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final SystemSettingRepository systemSettingRepository;
     private final AdminRepository adminRepository;
@@ -128,6 +140,59 @@ public class SystemSettingServiceImpl implements SystemSettingService {
                 .toList();
     }
 
+    @Override
+    public AdminFeeGraphResponse getFeeRateGraphForLast2Weeks(Long adminId) {
+        validateAdminAccess(adminId);
+
+        LocalDate toDate = LocalDate.now(KST);
+        LocalDate fromDate = toDate.minusDays(GRAPH_DAYS - 1L);
+        LocalDateTime fromDateTime = fromDate.atStartOfDay();
+        LocalDateTime toDateTime = toDate.plusDays(1).atStartOfDay().minusNanos(1);
+
+        List<EventLog> events = eventLogRepository.findByEventTypeAndCreatedAtBetweenOrderByCreatedAtAsc(
+                AdminEventType.FEE_RATE_CHANGED,
+                fromDateTime,
+                toDateTime
+        );
+
+        BigDecimal seed = eventLogRepository
+                .findTopByEventTypeAndCreatedAtLessThanOrderByCreatedAtDesc(AdminEventType.FEE_RATE_CHANGED, fromDateTime)
+                .map(this::extractAfterValue)
+                .orElseGet(this::getFeeRateOrDefault);
+
+        Map<LocalDate, BigDecimal> dailyLastRate = new LinkedHashMap<>();
+        for (EventLog event : events) {
+            BigDecimal afterValue = extractAfterValue(event);
+            if (afterValue == null) {
+                continue;
+            }
+            LocalDate changedDate = event.getCreatedAt().atZone(KST).toLocalDate();
+            dailyLastRate.put(changedDate, afterValue);
+        }
+
+        List<AdminFeeGraphPointResponse> points = new ArrayList<>();
+        BigDecimal current = seed;
+        for (int i = 0; i < GRAPH_DAYS; i++) {
+            LocalDate date = fromDate.plusDays(i);
+            boolean changed = dailyLastRate.containsKey(date);
+            if (changed) {
+                current = dailyLastRate.get(date);
+            }
+            points.add(AdminFeeGraphPointResponse.builder()
+                    .date(date.format(DATE_FORMATTER))
+                    .feeRate(current)
+                    .changed(changed)
+                    .build());
+        }
+
+        return AdminFeeGraphResponse.builder()
+                .fromDate(fromDate.format(DATE_FORMATTER))
+                .toDate(toDate.format(DATE_FORMATTER))
+                .unit("DAY")
+                .points(points)
+                .build();
+    }
+
     private AdminFeeChangeHistoryResponse toFeeHistoryResponse(EventLog eventLog) {
         JsonNode payload = eventLog.getPayload();
         String beforeValue = payloadText(payload, "beforeValue");
@@ -143,7 +208,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
                 .beforeValue(beforeValue)
                 .afterValue(afterValue)
                 .changedBy(eventLog.getAdmin().getName())
-                .payload(payload)
+                .payload(toMap(payload))
                 .build();
     }
 
@@ -154,6 +219,42 @@ public class SystemSettingServiceImpl implements SystemSettingService {
         return payload.get(key).asText();
     }
 
+    private Map<String, Object> toMap(JsonNode payload) {
+        if (payload == null || !payload.isObject()) {
+            return null;
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        payload.fields().forEachRemaining(entry -> result.put(entry.getKey(), toPlainValue(entry.getValue())));
+        return result;
+    }
+
+    private Object toPlainValue(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        if (node.isObject()) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            node.fields().forEachRemaining(entry -> map.put(entry.getKey(), toPlainValue(entry.getValue())));
+            return map;
+        }
+        if (node.isArray()) {
+            List<Object> list = new ArrayList<>();
+            node.forEach(item -> list.add(toPlainValue(item)));
+            return list;
+        }
+        if (node.isBoolean()) {
+            return node.booleanValue();
+        }
+        if (node.isIntegralNumber()) {
+            return node.longValue();
+        }
+        if (node.isFloatingPointNumber()) {
+            return node.decimalValue();
+        }
+        return node.asText();
+    }
+
     private JsonNode buildFeeChangePayload(String settingId, String beforeValue, String afterValue) {
         ObjectNode payload = JsonNodeFactory.instance.objectNode();
         payload.put("settingId", settingId);
@@ -162,6 +263,20 @@ public class SystemSettingServiceImpl implements SystemSettingService {
         payload.put("effectiveFeeRate", afterValue);
         payload.put("changed", true);
         return payload;
+    }
+
+    private BigDecimal extractAfterValue(EventLog eventLog) {
+        String afterValue = payloadText(eventLog.getPayload(), "afterValue");
+        if (afterValue == null || afterValue.isBlank()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(afterValue.trim());
+        } catch (NumberFormatException e) {
+            log.warn("수수료율 변경 로그 payload 파싱에 실패해 해당 이벤트를 건너뜁니다. logId={}, afterValue={}",
+                    eventLog.getLogId(), afterValue);
+            return null;
+        }
     }
 
     private Optional<BigDecimal> parseFeeRate(String rawValue) {
