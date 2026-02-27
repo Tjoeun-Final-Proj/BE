@@ -1,6 +1,7 @@
 package com.tjoeun.boxmon.global.systemsetting.service;
 
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeChangeHistoryResponse;
+import com.tjoeun.boxmon.feature.admin.dto.AdminFeeGraphResponse;
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeSettingResponse;
 
 import java.math.BigDecimal;
@@ -14,4 +15,6 @@ public interface SystemSettingService {
     AdminFeeSettingResponse updateFeeSetting(Long adminId, String value);
 
     List<AdminFeeChangeHistoryResponse> getFeeSettingHistory(Long adminId);
+
+    AdminFeeGraphResponse getFeeRateGraphForLast2Weeks(Long adminId);
 }

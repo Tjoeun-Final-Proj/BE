@@ -1,11 +1,11 @@
 package com.tjoeun.boxmon.feature.admin.dto;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Getter
 @Builder
@@ -20,6 +20,5 @@ public class AdminFeeChangeHistoryResponse {
     private String beforeValue;
     private String afterValue;
     private String changedBy;
-    private JsonNode payload;
+    private Map<String, Object> payload;
 }
-
