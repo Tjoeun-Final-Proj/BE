@@ -1,10 +1,10 @@
-package com.tjoeun.boxmon.feature.admin.service;
+package com.tjoeun.boxmon.global.systemsetting.service;
 
 import com.tjoeun.boxmon.exception.RoleAccessDeniedException;
-import com.tjoeun.boxmon.feature.admin.domain.SystemSetting;
 import com.tjoeun.boxmon.feature.admin.dto.AdminFeeSettingResponse;
 import com.tjoeun.boxmon.feature.admin.repository.AdminRepository;
-import com.tjoeun.boxmon.feature.admin.repository.SystemSettingRepository;
+import com.tjoeun.boxmon.global.systemsetting.domain.SystemSetting;
+import com.tjoeun.boxmon.global.systemsetting.repository.SystemSettingRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
