@@ -66,6 +66,24 @@ public class SystemSettingServiceImpl implements SystemSettingService {
         if (systemSettingRepository.findById(FEE_SETTING_ID).isEmpty()) {
             log.info("초기 수수료 설정을 생성합니다. 기본값: {}", DEFAULT_FEE_RATE);
             systemSettingRepository.save(new SystemSetting(FEE_SETTING_ID, DEFAULT_FEE_RATE.toPlainString()));
+
+            // 초기값 설정 사실을 EventLog에 기록하여 그래프 조회 시 기준점(Seed)으로 사용하게 함
+            try {
+                // 시스템 초기화 주체를 기록하기 위해 첫 번째 관리자를 찾음 (임시 방편)
+                Optional<Admin> firstAdmin = adminRepository.findAll().stream().findFirst();
+                if (firstAdmin.isPresent()) {
+                    eventLogRepository.save(EventLog.builder()
+                            .admin(firstAdmin.get())
+                            .eventType(AdminEventType.FEE_RATE_CHANGED)
+                            .payload(buildFeeChangePayload(FEE_SETTING_ID, "0", DEFAULT_FEE_RATE.toPlainString()))
+                            .build());
+                    log.info("초기 수수료 설정 이력(EventLog)을 생성했습니다.");
+                } else {
+                    log.warn("등록된 관리자가 없어 초기 수수료 설정 이력을 남기지 못했습니다.");
+                }
+            } catch (Exception e) {
+                log.error("초기 수수료 설정 이력 생성 중 오류 발생", e);
+            }
         }
     }
 
@@ -144,7 +162,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
 
         SystemSetting setting = systemSettingRepository.findById(FEE_SETTING_ID)
                 .orElseGet(() -> new SystemSetting(FEE_SETTING_ID, normalizedValue));
-        
+
         String beforeValue = setting.getValue();
         setting.updateValue(normalizedValue);
         systemSettingRepository.save(setting);
@@ -206,7 +224,7 @@ public class SystemSettingServiceImpl implements SystemSettingService {
         BigDecimal seed = eventLogRepository
                 .findTopByEventTypeAndCreatedAtLessThanOrderByCreatedAtDesc(AdminEventType.FEE_RATE_CHANGED, fromDateTime)
                 .map(this::extractAfterValue)
-                .orElseGet(this::getFeeRateOrDefault);
+                .orElse(DEFAULT_FEE_RATE); // getFeeRateOrDefault()를 호출하면 '현재' 값을 가져오므로 절대 기본값으로 고정
 
         // 3. 일자별 마지막 변경값 매핑 (한 날짜에 여러 번 변경 시 마지막 값 채택)
         Map<LocalDate, BigDecimal> dailyLastRate = new LinkedHashMap<>();
