@@ -3,7 +3,9 @@ package com.tjoeun.boxmon.feature.shipment.service;
 import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
+import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.mapper.ShipmentMapper;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
@@ -87,6 +89,34 @@ public class ShipmentQueryService {
 
         return shipments.stream()
                 .map(shipmentMapper::toUnassignedShipmentResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 화주 운송 현황 조회.
+     * REQUESTED(미배차) 상태를 제외한 본인 등록 화물 목록을 조회합니다.
+     */
+    public List<ShipperInventoryResponse> getMyShipperInventory(Long shipperId) {
+        support.validateShipperAccess(shipperId);
+        List<Shipment> shipments = shipmentRepository
+                .findByShipper_ShipperIdAndShipmentStatusNotOrderByCreatedAtDesc(shipperId, ShipmentStatus.REQUESTED);
+
+        return shipments.stream()
+                .map(shipmentMapper::toShipperInventoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 차주 운송 현황 조회.
+     * 본인에게 배차된 화물의 전체 상태 목록을 조회합니다.
+     */
+    public List<DriverInventoryResponse> getMyDriverInventory(Long driverId) {
+        support.validateDriverAccess(driverId);
+        List<Shipment> shipments = shipmentRepository
+                .findByDriver_DriverIdOrderByCreatedAtDesc(driverId);
+
+        return shipments.stream()
+                .map(shipmentMapper::toDriverInventoryResponse)
                 .collect(Collectors.toList());
     }
 

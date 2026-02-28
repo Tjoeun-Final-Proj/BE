@@ -3,8 +3,10 @@ package com.tjoeun.boxmon.feature.shipment.mapper;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.CargoType;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
+import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementListResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementListResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.user.domain.VehicleType;
@@ -67,6 +69,16 @@ public interface ShipmentMapper {
     @Mapping(target = "vehicleType", source = "vehicleType", qualifiedByName = "toVehicleDescription")
     @Mapping(target = "profit", source = "profit", qualifiedByName = "roundMoney")
     UnassignedShipmentResponse toUnassignedShipmentResponse(Shipment shipment);
+
+    @Mapping(target = "vehicleType", source = "vehicleType", qualifiedByName = "toVehicleDescription")
+    @Mapping(target = "shipmentStatus", source = "shipmentStatus", qualifiedByName = "toShipmentStatusDescription")
+    @Mapping(target = "price", source = "price", qualifiedByName = "roundMoney")
+    ShipperInventoryResponse toShipperInventoryResponse(Shipment shipment);
+
+    @Mapping(target = "vehicleType", source = "vehicleType", qualifiedByName = "toVehicleDescription")
+    @Mapping(target = "shipmentStatus", source = "shipmentStatus", qualifiedByName = "toShipmentStatusDescription")
+    @Mapping(target = "profit", source = "profit", qualifiedByName = "roundMoney")
+    DriverInventoryResponse toDriverInventoryResponse(Shipment shipment);
 
     @Named("toSpringPoint")
     default org.springframework.data.geo.Point toSpringPoint(Point jtsPoint) {
