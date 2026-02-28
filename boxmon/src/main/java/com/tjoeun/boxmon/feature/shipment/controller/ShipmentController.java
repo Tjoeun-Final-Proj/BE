@@ -256,10 +256,10 @@ public class ShipmentController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Shipper transport inventory", description = "Returns non-requested shipments created by the authenticated shipper.")
-    @ApiResponse(responseCode = "200", description = "Inventory retrieved")
-    @ApiResponse(responseCode = "401", description = "Authentication failed")
-    @ApiResponse(responseCode = "403", description = "Shipper role required")
+    @Operation(summary = "화주 운송 현황 조회", description = "인증된 화주가 등록한 화물 중 REQUESTED(미배차)를 제외한 운송 현황을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "운송 현황 조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "화주 권한 필요")
     @GetMapping("/my/inventory/shipper")
     public ResponseEntity<List<ShipperInventoryResponse>> getMyShipperInventory(Authentication authentication) {
         Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
@@ -267,10 +267,10 @@ public class ShipmentController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Driver transport inventory", description = "Returns all-status shipments assigned to the authenticated driver.")
-    @ApiResponse(responseCode = "200", description = "Inventory retrieved")
-    @ApiResponse(responseCode = "401", description = "Authentication failed")
-    @ApiResponse(responseCode = "403", description = "Driver role required")
+    @Operation(summary = "차주 운송 현황 조회", description = "인증된 차주에게 배차된 화물의 전체 상태 운송 현황을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "운송 현황 조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "차주 권한 필요")
     @GetMapping("/my/inventory/driver")
     public ResponseEntity<List<DriverInventoryResponse>> getMyDriverInventory(Authentication authentication) {
         Long driverId = Long.valueOf(authentication.getPrincipal().toString());

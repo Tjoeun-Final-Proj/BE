@@ -93,7 +93,8 @@ public class ShipmentQueryService {
     }
 
     /**
-     * Shipper inventory excluding REQUESTED shipments.
+     * 화주 운송 현황 조회.
+     * REQUESTED(미배차) 상태를 제외한 본인 등록 화물 목록을 조회합니다.
      */
     public List<ShipperInventoryResponse> getMyShipperInventory(Long shipperId) {
         support.validateShipperAccess(shipperId);
@@ -106,7 +107,8 @@ public class ShipmentQueryService {
     }
 
     /**
-     * Driver inventory for all statuses assigned to this driver.
+     * 차주 운송 현황 조회.
+     * 본인에게 배차된 화물의 전체 상태 목록을 조회합니다.
      */
     public List<DriverInventoryResponse> getMyDriverInventory(Long driverId) {
         support.validateDriverAccess(driverId);
