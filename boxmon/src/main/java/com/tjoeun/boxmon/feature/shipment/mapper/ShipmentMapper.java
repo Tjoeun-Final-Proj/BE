@@ -2,6 +2,7 @@ package com.tjoeun.boxmon.feature.shipment.mapper;
 
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.CargoType;
+import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementListResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementListResponse;
@@ -56,8 +57,10 @@ public interface ShipmentMapper {
     }
 
     @Mapping(target = "price", source = "price", qualifiedByName = "roundMoney")
+    @Mapping(target = "shipmentStatus", source = "shipmentStatus", qualifiedByName = "toShipmentStatusDescription")
     ShipperSettlementListResponse toShipperSettlementListResponse(Shipment shipment);
 
+    @Mapping(target = "shipmentStatus", source = "shipmentStatus", qualifiedByName = "toShipmentStatusDescription")
     @Mapping(target = "profit", source = "profit", qualifiedByName = "roundMoney")
     DriverSettlementListResponse toDriverSettlementListResponse(Shipment shipment);
 
@@ -81,6 +84,11 @@ public interface ShipmentMapper {
     @Named("toCargoDescription")
     default String toCargoDescription(CargoType cargoType) {
         return cargoType == null ? null : cargoType.getDescription();
+    }
+
+    @Named("toShipmentStatusDescription")
+    default String toShipmentStatusDescription(ShipmentStatus shipmentStatus) {
+        return shipmentStatus == null ? null : shipmentStatus.getDescription();
     }
 
     @Named("roundMoney")
