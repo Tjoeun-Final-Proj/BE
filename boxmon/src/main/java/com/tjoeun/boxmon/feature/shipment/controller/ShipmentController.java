@@ -3,6 +3,8 @@ package com.tjoeun.boxmon.feature.shipment.controller;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.service.ShipmentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -251,6 +253,28 @@ public class ShipmentController {
     public ResponseEntity<List<UnassignedShipmentResponse>> getMyUnassignedShipments(Authentication authentication) {
         Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
         List<UnassignedShipmentResponse> response = shipmentService.getMyUnassignedShipments(shipperId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Shipper transport inventory", description = "Returns non-requested shipments created by the authenticated shipper.")
+    @ApiResponse(responseCode = "200", description = "Inventory retrieved")
+    @ApiResponse(responseCode = "401", description = "Authentication failed")
+    @ApiResponse(responseCode = "403", description = "Shipper role required")
+    @GetMapping("/my/inventory/shipper")
+    public ResponseEntity<List<ShipperInventoryResponse>> getMyShipperInventory(Authentication authentication) {
+        Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
+        List<ShipperInventoryResponse> response = shipmentService.getMyShipperInventory(shipperId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Driver transport inventory", description = "Returns all-status shipments assigned to the authenticated driver.")
+    @ApiResponse(responseCode = "200", description = "Inventory retrieved")
+    @ApiResponse(responseCode = "401", description = "Authentication failed")
+    @ApiResponse(responseCode = "403", description = "Driver role required")
+    @GetMapping("/my/inventory/driver")
+    public ResponseEntity<List<DriverInventoryResponse>> getMyDriverInventory(Authentication authentication) {
+        Long driverId = Long.valueOf(authentication.getPrincipal().toString());
+        List<DriverInventoryResponse> response = shipmentService.getMyDriverInventory(driverId);
         return ResponseEntity.ok(response);
     }
 }

@@ -3,7 +3,9 @@ package com.tjoeun.boxmon.feature.shipment.service;
 import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
+import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.mapper.ShipmentMapper;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
@@ -87,6 +89,32 @@ public class ShipmentQueryService {
 
         return shipments.stream()
                 .map(shipmentMapper::toUnassignedShipmentResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Shipper inventory excluding REQUESTED shipments.
+     */
+    public List<ShipperInventoryResponse> getMyShipperInventory(Long shipperId) {
+        support.validateShipperAccess(shipperId);
+        List<Shipment> shipments = shipmentRepository
+                .findByShipper_ShipperIdAndShipmentStatusNotOrderByCreatedAtDesc(shipperId, ShipmentStatus.REQUESTED);
+
+        return shipments.stream()
+                .map(shipmentMapper::toShipperInventoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Driver inventory for all statuses assigned to this driver.
+     */
+    public List<DriverInventoryResponse> getMyDriverInventory(Long driverId) {
+        support.validateDriverAccess(driverId);
+        List<Shipment> shipments = shipmentRepository
+                .findByDriver_DriverIdOrderByCreatedAtDesc(driverId);
+
+        return shipments.stream()
+                .map(shipmentMapper::toDriverInventoryResponse)
                 .collect(Collectors.toList());
     }
 
