@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     // 차량 번호로 차량 존재 여부를 확인하기 위한 메소드
     Optional<Vehicle> findByVehicleNumber(String vehicleNumber);
+
+    Vehicle findByDriver_User_UserId(Long userId);
 }

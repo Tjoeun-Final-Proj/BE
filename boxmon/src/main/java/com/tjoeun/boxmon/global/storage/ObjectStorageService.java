@@ -18,6 +18,11 @@ public interface ObjectStorageService {
     String uploadDropoffPhoto(MultipartFile file);
 
     /**
+     * 문의 등록 시 첨부된 이미지를 업로드하고 저장된 객체 키를 반환합니다.
+     */
+    String uploadInquiryPhoto(MultipartFile file);
+
+    /**
      * 객체 키를 외부에서 접근 가능한 공개 URL 형태로 변환합니다.
      */
     String buildPublicUrl(String objectKey);

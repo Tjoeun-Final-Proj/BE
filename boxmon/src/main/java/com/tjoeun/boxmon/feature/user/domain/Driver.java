@@ -22,18 +22,12 @@ public class Driver {
     @Column(name = "account_number")
     private String accountNumber;
 
-    @Column(nullable = false, name = "cert_number")
-    private String certNumber;
-
     @Column(name = "holder_name")
     private String holderName;
 
     protected Driver() {}
 
-    public Driver(User user, String certNumber) {
+    public Driver(User user) {
         this.user = user;
-        this.certNumber = certNumber;
     }
-
-
 }
