@@ -1,5 +1,6 @@
 package com.tjoeun.boxmon.feature.shipment.mapper;
 
+import com.tjoeun.boxmon.feature.settlement.dto.SettlementViewStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.CargoType;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
@@ -60,7 +61,11 @@ public interface ShipmentMapper {
 
     @Mapping(target = "price", source = "price", qualifiedByName = "roundMoney")
     @Mapping(target = "shipmentStatus", source = "shipmentStatus", qualifiedByName = "toShipmentStatusDescription")
-    ShipperSettlementListResponse toShipperSettlementListResponse(Shipment shipment);
+    @Mapping(target = "settlementStatus", source = "settlementViewStatus")
+    ShipperSettlementListResponse toShipperSettlementListResponse(
+            Shipment shipment,
+            SettlementViewStatus settlementViewStatus
+    );
 
     @Mapping(target = "shipmentStatus", source = "shipmentStatus", qualifiedByName = "toShipmentStatusDescription")
     @Mapping(target = "profit", source = "profit", qualifiedByName = "roundMoney")

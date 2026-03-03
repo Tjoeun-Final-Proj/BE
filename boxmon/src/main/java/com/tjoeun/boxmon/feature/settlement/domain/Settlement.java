@@ -3,6 +3,7 @@ package com.tjoeun.boxmon.feature.settlement.domain;
 import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 
@@ -17,10 +18,12 @@ public class Settlement {
     @JoinColumn(name = "shipment_id", nullable = false)
     private Shipment shipment;
     
+    @Getter
     @Enumerated(EnumType.STRING)
     @Column(name = "settlement_status", nullable = false)
     private SettlementStatus settlementStatus;
     
+    @Getter
     @Column(name = "settle_scheduled_at")
     private LocalDateTime settleScheduledAt;
     

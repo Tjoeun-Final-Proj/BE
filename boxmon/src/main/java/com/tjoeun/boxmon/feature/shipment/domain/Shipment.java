@@ -152,11 +152,6 @@ public class Shipment {
     @Column(name = "current_location_point", columnDefinition = "POINT SRID 4326")
     private Point currentLocationPoint; // 운송 중인 차량의 최신 경위도 좌표
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "settlement_status", nullable = false)
-    @Builder.Default // 빌더를 사용하지 않고 생성할 때를 대비
-    private SettlementStatus settlementStatus = SettlementStatus.INELIGIBLE; // 배송 정산 상태
-
     /**
      * 엔티티가 영속화되기 전에 호출되어 `createdAt` 필드를 현재 시간으로 자동 설정합니다.
      */

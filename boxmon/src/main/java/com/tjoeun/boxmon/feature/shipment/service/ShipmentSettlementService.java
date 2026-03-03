@@ -3,6 +3,7 @@ package com.tjoeun.boxmon.feature.shipment.service;
 import com.tjoeun.boxmon.exception.RoleAccessDeniedException;
 import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.exception.ShipmentStateConflictException;
+import com.tjoeun.boxmon.feature.settlement.service.SettlementViewStatusResolver;
 import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
@@ -31,6 +32,7 @@ public class ShipmentSettlementService {
     private final ShipmentRepository shipmentRepository;
     private final ShipmentDomainSupport support;
     private final ShipmentMapper shipmentMapper;
+    private final SettlementViewStatusResolver settlementViewStatusResolver;
 
     /**
      * 정산 상세 조회: DONE 상태 + 화주/배정차주 본인만 허용.
@@ -126,7 +128,10 @@ public class ShipmentSettlementService {
         );
 
         return shipments.stream()
-                .map(shipmentMapper::toShipperSettlementListResponse)
+                .map(shipment -> shipmentMapper.toShipperSettlementListResponse(
+                        shipment, 
+                        settlementViewStatusResolver.resolve(shipment)
+                ))
                 .collect(Collectors.toList());
     }
 
