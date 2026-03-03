@@ -1,19 +1,19 @@
 package com.tjoeun.boxmon.feature.user.controller;
 
-import com.tjoeun.boxmon.feature.admin.domain.Admin;
 import com.tjoeun.boxmon.feature.user.domain.User;
 import com.tjoeun.boxmon.feature.user.dto.*;
 import com.tjoeun.boxmon.feature.user.service.UserService;
 import com.tjoeun.boxmon.security.jwt.RefreshTokenService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.tjoeun.boxmon.feature.user.dto.AccountDto;
 
 import java.util.List;
-import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("api/user")
 public class UserController {
@@ -79,6 +79,20 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@AuthenticationPrincipal Long userId, @RequestBody String pw){
         userService.deleteUser(userId, pw);
         return ResponseEntity.ok().build();
+    }
+
+    //화주 상세 조회
+    @PostMapping("/shipperDetail")
+    public ResponseEntity<ShipperDetail> getShipperDetail(@RequestBody Long userId){
+        return ResponseEntity.ok(userService.getShipperDetail(userId));
+    }
+
+    //차주 상세 조회
+    @PostMapping("/driverDetail")
+    public ResponseEntity<DriverDetail> getDriverDetail(@RequestBody Long userId){
+        DriverDetail driverDetail = userService.getDriverDetail(userId);
+        log.warn("result:{}",driverDetail);
+        return ResponseEntity.ok(driverDetail);
     }
 
 }

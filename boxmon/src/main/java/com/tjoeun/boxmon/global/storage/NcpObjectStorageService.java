@@ -92,6 +92,7 @@ public class NcpObjectStorageService implements ObjectStorageService {
         return trimmedEndpoint + "/" + bucket + "/" + objectKey;
     }
 
+
     @Override
     public void deleteObject(String objectKey) {
         // DB 저장 실패 등 보상 트랜잭션에서 사용합니다.
@@ -119,6 +120,11 @@ public class NcpObjectStorageService implements ObjectStorageService {
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
             throw new IllegalArgumentException("지원하지 않는 이미지 형식입니다. (jpeg/png/webp)");
         }
+    }
+
+    @Override
+    public String uploadInquiryPhoto(MultipartFile file) {
+        return uploadImage(file, "inquiries");
     }
 
     /**

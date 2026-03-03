@@ -62,10 +62,11 @@ public class JwtFilter extends OncePerRequestFilter {
 
         // 토큰에서 userId 추출 + account_status 검증
         Long accountId = jwtProvider.getUserIdFromToken(token);
-        if(!jwtService.statusCheck(accountId)){
-            throw new AccountBlockedException("차단된 계정입니다.");
+        if(!jwtProvider.checkAdmin(token)) {
+            if (!jwtService.statusCheck(accountId)) {
+                throw new AccountBlockedException("차단된 계정입니다.");
+            }
         }
-
         // 인증 객체 생성 (권한은 아직 없음)
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(

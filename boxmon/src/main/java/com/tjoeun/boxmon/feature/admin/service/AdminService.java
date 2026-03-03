@@ -15,7 +15,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -57,10 +56,10 @@ public class AdminService {
         }
 
         // Access Token 생성 (15분 만료)
-        String accessToken = jwtProvider.createAccessToken(admin.getAdminId());
+        String accessToken = jwtProvider.createAccessToken(admin.getAdminId(), true);
 
         // Refresh Token 생성 (14일 만료)
-        String refreshToken = jwtProvider.createRefreshToken(admin.getAdminId());
+        String refreshToken = jwtProvider.createRefreshToken(admin.getAdminId(), true);
 
         return new AdminLogin(accessToken, refreshToken);
     }
@@ -89,4 +88,6 @@ public class AdminService {
         adminRepository.deleteById(adminId);
         em.flush();
     }
+
+
 }

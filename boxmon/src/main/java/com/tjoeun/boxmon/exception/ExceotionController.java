@@ -54,6 +54,12 @@ public class ExceotionController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
     }
 
+    // 문의 테이블 없을때 404(Not Found)로 변환
+    @ExceptionHandler(ContactNotFoundException.class)
+    public  ResponseEntity<String> contactNotFoundException(ContactNotFoundException e){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(Exception e){
