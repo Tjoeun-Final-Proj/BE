@@ -54,6 +54,15 @@ public class ExceotionController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
     }
 
+    @ExceptionHandler(InvalidChatAccessException.class)
+    public ResponseEntity<String> invalidChatAccessException(InvalidChatAccessException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+    }
+
+    @ExceptionHandler(ChatValidationException.class)
+    public ResponseEntity<String> chatValidationException(ChatValidationException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+      
     // 문의 테이블 없을때 404(Not Found)로 변환
     @ExceptionHandler(ContactNotFoundException.class)
     public  ResponseEntity<String> contactNotFoundException(ContactNotFoundException e){
