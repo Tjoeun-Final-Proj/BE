@@ -172,7 +172,6 @@ public class AdminShipmentServiceImpl implements AdminShipmentService {
                 .waypoint2Point(convertToSpringPoint(shipment.getWaypoint2Point()))
                 .createdAt(shipment.getCreatedAt())
                 .currentLocationPoint(convertToSpringPoint(shipment.getCurrentLocationPoint()))
-                .settlementStatus(shipment.getSettlementStatus())
                 .build();
     }
 

@@ -131,10 +131,9 @@ public class ShipmentServiceFacade implements ShipmentService {
             Long driverId,
             int year,
             int month,
-            ShipmentStatus shipmentStatus,
-            SettlementStatus settlementStatus
+            ShipmentStatus shipmentStatus
     ) {
         return shipmentSettlementService
-                .getDriverSettlementList(driverId, year, month, shipmentStatus, settlementStatus);
+                .getDriverSettlementList(driverId, year, month, shipmentStatus);
     }
 }

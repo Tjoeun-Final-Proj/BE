@@ -50,5 +50,4 @@ public class AdminAssignedShipmentDetailResponse {
     private Point waypoint2Point;
     private LocalDateTime createdAt;
     private Point currentLocationPoint;
-    private SettlementStatus settlementStatus;
 }

@@ -6,11 +6,7 @@ import com.tjoeun.boxmon.exception.ShipmentStateConflictException;
 import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
-import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementListResponse;
-import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementSummaryResponse;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementListResponse;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementSummaryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.*;
 import com.tjoeun.boxmon.feature.shipment.mapper.ShipmentMapper;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -141,8 +137,7 @@ public class ShipmentSettlementService {
             Long driverId,
             int year,
             int month,
-            ShipmentStatus shipmentStatus,
-            SettlementStatus settlementStatus
+            ShipmentStatus shipmentStatus
     ) {
         support.validateDriverAccess(driverId);
         support.validateYearMonth(year, month);
@@ -151,7 +146,7 @@ public class ShipmentSettlementService {
         LocalDateTime end = start.plusMonths(1).minusNanos(1);
 
         List<Shipment> shipments = findDriverSettlementShipments(
-                driverId, start, end, shipmentStatus, settlementStatus
+                driverId, start, end, shipmentStatus
         );
 
         return shipments.stream()
@@ -194,25 +189,12 @@ public class ShipmentSettlementService {
             Long driverId,
             LocalDateTime start,
             LocalDateTime end,
-            ShipmentStatus shipmentStatus,
-            SettlementStatus settlementStatus
+            ShipmentStatus shipmentStatus
     ) {
-        if (shipmentStatus != null && settlementStatus != null) {
-            return shipmentRepository
-                    .findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
-                            driverId, start, end, shipmentStatus, settlementStatus
-                    );
-        }
         if (shipmentStatus != null) {
             return shipmentRepository
                     .findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
                             driverId, start, end, shipmentStatus
-                    );
-        }
-        if (settlementStatus != null) {
-            return shipmentRepository
-                    .findByDriver_DriverIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
-                            driverId, start, end, settlementStatus
                     );
         }
         return shipmentRepository
