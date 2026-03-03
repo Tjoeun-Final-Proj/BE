@@ -5,6 +5,7 @@ import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.exception.ShipmentStateConflictException;
 import com.tjoeun.boxmon.exception.UserNotFoundException;
 import com.tjoeun.boxmon.feature.notification.service.NotificationUseCase;
+import com.tjoeun.boxmon.feature.settlement.service.SettlementNotifier;
 import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
@@ -52,6 +53,7 @@ public class ShipmentCommandService {
     private final ObjectStorageService objectStorageService;
     private final ShipmentDomainSupport support;
     private final ShipmentCreateMapper shipmentCreateMapper;
+    private final SettlementNotifier settlementNotifier;
 
     /**
      * 새로운 운송 요청(화물)을 생성합니다.
@@ -223,7 +225,7 @@ public class ShipmentCommandService {
         if (dropoffPhotoUrl != null && !dropoffPhotoUrl.isBlank()) {
             shipment.setDropoffPhotoUrl(dropoffPhotoUrl);
         }
-        shipment.setSettlementStatus(SettlementStatus.READY);
+        settlementNotifier.onShipmentCompleted(shipmentId); //운송 완료 사실을 정산 도메인에 전달
         try {
             shipmentRepository.save(shipment);
         } catch (RuntimeException e) {

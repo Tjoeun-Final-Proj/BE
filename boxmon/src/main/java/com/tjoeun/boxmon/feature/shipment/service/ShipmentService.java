@@ -3,7 +3,6 @@ package com.tjoeun.boxmon.feature.shipment.service;
 import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.*;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
