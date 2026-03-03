@@ -1,13 +1,14 @@
 package com.tjoeun.boxmon.feature.admin.controller;
 
+import com.tjoeun.boxmon.feature.admin.domain.Penalties;
 import com.tjoeun.boxmon.feature.admin.dto.PenaltiesDto;
 import com.tjoeun.boxmon.feature.admin.service.PenaltyService;
+import com.tjoeun.boxmon.feature.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/penalty")
@@ -42,6 +43,13 @@ public class PenaltyController {
     public ResponseEntity<Void> deletePenalty (@RequestBody Long penaltyId){
         penaltyService.deletePenalty(penaltyId);
         return ResponseEntity.ok().build();
+    }
+
+    // 패널티 목록 조회
+    @GetMapping("list")
+    public ResponseEntity<?> getUserList(@RequestParam Long userId) {
+        List<Penalties> penalties =penaltyService.PenaltyList(userId);
+        return ResponseEntity.ok(penalties);
     }
 
 }

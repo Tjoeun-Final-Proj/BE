@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,6 +28,7 @@ public class PenaltyService {
         User user = userRepository.findById(userId)
                 .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
         user.setAccountStatus(Boolean.FALSE);
+        userRepository.save(user);
     }
 
     //계정 복구
@@ -34,6 +36,7 @@ public class PenaltyService {
         User user = userRepository.findById(userId)
                 .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
         user.setAccountStatus(Boolean.TRUE);
+        userRepository.save(user);
     }
 
     //패널티 추가
@@ -51,9 +54,16 @@ public class PenaltyService {
     }
 
     //패널티 삭제
-    public void deletePenalty(Long penaltyId){
+    public void deletePenalty(Long penaltyId) {
         Penalties penalties = penaltiesRepository.findById(penaltyId)
                 .orElseThrow();
         penaltiesRepository.delete(penalties);
     }
+
+    //패널티 조회
+    public List<Penalties> PenaltyList(Long userId){
+        List<Penalties> penalties = penaltiesRepository.findAllByUser_UserId(userId);
+        return penalties;
+    }
+
 }

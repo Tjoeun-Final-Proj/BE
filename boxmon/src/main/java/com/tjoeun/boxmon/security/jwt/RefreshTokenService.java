@@ -30,14 +30,16 @@ public class RefreshTokenService {
             throw new TokenTypeMismatchException("Refresh Token이 아닙니다");
         }
 
+        boolean isAdmin = jwtProvider.checkAdmin(refreshTokenValue);
+
         // Refresh Token에서 userId 추출
         Long userId = jwtProvider.getUserIdFromToken(refreshTokenValue);
 
         // 새로운 Access Token 생성
-        String newAccessToken = jwtProvider.createAccessToken(userId);
+        String newAccessToken = jwtProvider.createAccessToken(userId, isAdmin);
 
         // 새로운 Refresh Token 생성
-        String newRefreshToken = jwtProvider.createRefreshToken(userId);
+        String newRefreshToken = jwtProvider.createRefreshToken(userId, isAdmin);
 
         return new TokenRefreshResponse(newAccessToken, newRefreshToken);
     }

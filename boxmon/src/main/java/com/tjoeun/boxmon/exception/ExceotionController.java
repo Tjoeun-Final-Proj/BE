@@ -62,6 +62,11 @@ public class ExceotionController {
     @ExceptionHandler(ChatValidationException.class)
     public ResponseEntity<String> chatValidationException(ChatValidationException e) {
         return ResponseEntity.badRequest().body(e.getMessage());
+      
+    // 문의 테이블 없을때 404(Not Found)로 변환
+    @ExceptionHandler(ContactNotFoundException.class)
+    public  ResponseEntity<String> contactNotFoundException(ContactNotFoundException e){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
     }
 
 

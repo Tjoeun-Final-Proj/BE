@@ -5,7 +5,6 @@ public class UserListDto {
 
     private String name;
 
-
     private String email;
 
 }
