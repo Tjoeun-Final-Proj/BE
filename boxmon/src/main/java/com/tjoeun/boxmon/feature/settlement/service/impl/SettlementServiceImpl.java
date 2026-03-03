@@ -2,11 +2,10 @@ package com.tjoeun.boxmon.feature.settlement.service.impl;
 
 import com.tjoeun.boxmon.feature.settlement.domain.Settlement;
 import com.tjoeun.boxmon.feature.settlement.repository.SettlementRepository;
-import com.tjoeun.boxmon.feature.settlement.service.DriverRegisterUsecase;
+import com.tjoeun.boxmon.feature.settlement.service.DriverRegisterUseCase;
 import com.tjoeun.boxmon.feature.settlement.service.SettlementNotifier;
 import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
-import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.feature.user.domain.Driver;
 import com.tjoeun.boxmon.feature.user.domain.User;
 import com.tjoeun.boxmon.global.client.TossApiClient;
@@ -20,7 +19,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SettlementServiceImpl implements DriverRegisterUsecase, SettlementNotifier {
+public class SettlementServiceImpl implements DriverRegisterUseCase, SettlementNotifier {
 
     private final TossApiClient tossApiClient;
     private final EntityManager em;
