@@ -54,6 +54,16 @@ public class ExceotionController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
     }
 
+    @ExceptionHandler(InvalidChatAccessException.class)
+    public ResponseEntity<String> invalidChatAccessException(InvalidChatAccessException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+    }
+
+    @ExceptionHandler(ChatValidationException.class)
+    public ResponseEntity<String> chatValidationException(ChatValidationException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(Exception e){

@@ -38,6 +38,8 @@ public class SecurityConfig {
                                 "/api/user/refresh",
                                 "/api/admin/LoginAdmin",
                                 "/api/admin/create",
+                                "/ws-chat/**",
+                                "/api/chat/**",
                                 //for swagger-ui
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
