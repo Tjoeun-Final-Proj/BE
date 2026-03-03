@@ -52,6 +52,8 @@ public class ShipmentDetailResponse {
     private String cargoVolume; // 화물 부피
     private Double cargoWeight; // 화물 무게
     private String vehicleType; // 차량 타입
+    private Boolean needRefrigerate; // 냉장 필요 여부
+    private Boolean needFreeze; // 냉동 필요 여부
     private String description; // 특이사항
 
     // 7) 금액 정보

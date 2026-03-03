@@ -11,6 +11,10 @@ import java.time.LocalDateTime;
 public class DriverInventoryResponse {
     private Long shipmentId;
     private String pickupAddress;
+    private String waypoint1Address;
+    private LocalDateTime waypoint1At;
+    private String waypoint2Address;
+    private LocalDateTime waypoint2At;
     private String dropoffAddress;
     private LocalDateTime pickupDesiredAt;
     private LocalDateTime dropoffDesiredAt;
