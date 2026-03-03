@@ -1,4 +1,4 @@
-package com.tjoeun.boxmon.feature.admin.domain;
+package com.tjoeun.boxmon.global.systemsetting.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

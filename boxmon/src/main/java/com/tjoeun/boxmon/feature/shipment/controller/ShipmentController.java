@@ -3,6 +3,8 @@ package com.tjoeun.boxmon.feature.shipment.controller;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.service.ShipmentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -251,6 +253,28 @@ public class ShipmentController {
     public ResponseEntity<List<UnassignedShipmentResponse>> getMyUnassignedShipments(Authentication authentication) {
         Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
         List<UnassignedShipmentResponse> response = shipmentService.getMyUnassignedShipments(shipperId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "화주 운송 현황 조회", description = "인증된 화주가 등록한 화물 중 REQUESTED(미배차)를 제외한 운송 현황을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "운송 현황 조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "화주 권한 필요")
+    @GetMapping("/my/inventory/shipper")
+    public ResponseEntity<List<ShipperInventoryResponse>> getMyShipperInventory(Authentication authentication) {
+        Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
+        List<ShipperInventoryResponse> response = shipmentService.getMyShipperInventory(shipperId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "차주 운송 현황 조회", description = "인증된 차주에게 배차된 화물의 전체 상태 운송 현황을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "운송 현황 조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "차주 권한 필요")
+    @GetMapping("/my/inventory/driver")
+    public ResponseEntity<List<DriverInventoryResponse>> getMyDriverInventory(Authentication authentication) {
+        Long driverId = Long.valueOf(authentication.getPrincipal().toString());
+        List<DriverInventoryResponse> response = shipmentService.getMyDriverInventory(driverId);
         return ResponseEntity.ok(response);
     }
 }
