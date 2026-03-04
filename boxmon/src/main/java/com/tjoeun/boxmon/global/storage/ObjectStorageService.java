@@ -23,6 +23,11 @@ public interface ObjectStorageService {
     String uploadInquiryPhoto(MultipartFile file);
 
     /**
+     * 채팅 이미지 파일을 업로드하고 저장된 객체 키를 반환합니다.
+     */
+    String uploadChatImage(MultipartFile file);
+
+    /**
      * 객체 키를 외부에서 접근 가능한 공개 URL 형태로 변환합니다.
      */
     String buildPublicUrl(String objectKey);

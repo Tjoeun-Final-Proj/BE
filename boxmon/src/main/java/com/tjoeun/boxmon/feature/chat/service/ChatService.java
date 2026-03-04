@@ -6,15 +6,18 @@ import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.feature.chat.domain.Chat;
 import com.tjoeun.boxmon.feature.chat.domain.ChatContentType;
 import com.tjoeun.boxmon.feature.chat.domain.ChatSenderRole;
+import com.tjoeun.boxmon.feature.chat.dto.ChatImageUploadResponse;
 import com.tjoeun.boxmon.feature.chat.dto.ChatMessageResponse;
 import com.tjoeun.boxmon.feature.chat.dto.ChatSendRequest;
 import com.tjoeun.boxmon.feature.chat.repository.ChatRepository;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
+import com.tjoeun.boxmon.global.storage.ObjectStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,6 +30,7 @@ public class ChatService {
 
     private final ChatRepository chatRepository;
     private final ShipmentRepository shipmentRepository;
+    private final ObjectStorageService objectStorageService;
 
     public List<ChatMessageResponse> getMessages(Long shipmentId, Long userId, ChatSenderRole role) {
         Shipment shipment = getShipment(shipmentId);
@@ -55,6 +59,17 @@ public class ChatService {
         );
 
         return toResponse(saved);
+    }
+
+    @Transactional
+    public ChatImageUploadResponse uploadImage(Long shipmentId, Long userId, ChatSenderRole role, MultipartFile image) {
+        Shipment shipment = getShipment(shipmentId);
+        validateShipmentStatus(shipment.getShipmentStatus());
+        validateParticipant(shipment, userId, role);
+
+        String objectKey = objectStorageService.uploadChatImage(image);
+        String imageUrl = objectStorageService.buildPublicUrl(objectKey);
+        return new ChatImageUploadResponse(imageUrl, ChatContentType.IMG_URL);
     }
 
     private Shipment getShipment(Long shipmentId) {
