@@ -1,15 +1,21 @@
 package com.tjoeun.boxmon.feature.admin.service;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tjoeun.boxmon.exception.DuplicateAdminException;
 import com.tjoeun.boxmon.exception.InvalidPasswordException;
 import com.tjoeun.boxmon.exception.UserNotFoundException;
 
 
 import com.tjoeun.boxmon.feature.admin.domain.Admin;
+import com.tjoeun.boxmon.feature.admin.domain.AdminEventType;
+import com.tjoeun.boxmon.feature.admin.domain.EventLog;
 import com.tjoeun.boxmon.feature.admin.dto.AdminLogin;
 import com.tjoeun.boxmon.feature.admin.dto.AdminRequest;
 import com.tjoeun.boxmon.feature.admin.repository.AdminRepository;
+import com.tjoeun.boxmon.feature.admin.repository.EventLogRepository;
 import com.tjoeun.boxmon.security.jwt.JwtProvider;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -30,9 +36,15 @@ public class AdminService {
     private  final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final EntityManager em;
+    private final EventLogRepository eventLogRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 관리자 계정 생성
-    public void createAdmin(AdminRequest adminRequest) {
+    @Transactional
+    public void createAdmin(Long adminId, AdminRequest adminRequest) {
+        Admin currentAdmin = adminRepository.findByAdminId(adminId)
+                .orElseThrow(() -> new UserNotFoundException("관리자 없음"));
+
         if (adminRepository.existsByLoginId(adminRequest.getLoginId())) {
             throw new DuplicateAdminException("이미 존재하는 관리자 ID");
         }
@@ -44,6 +56,20 @@ public class AdminService {
         );
 
         adminRepository.save(admin);
+
+        // %d(ID:%d) 형식을 맞추기 위해 이름과 ID를 각각 넣어줍니다.
+        String logMessage = String.format("%s(ID:%d)가 %s(ID:%d)를 생성",
+                currentAdmin.getName(), currentAdmin.getAdminId(),
+                admin.getName(), admin.getAdminId());
+
+        // 팀원 방식대로 objectMapper를 사용해 JsonNode로 변환합니다.
+        JsonNode payload = objectMapper.valueToTree(logMessage);
+
+        eventLogRepository.save(EventLog.builder()
+                .admin(currentAdmin)
+                .eventType(AdminEventType.ADMIN_REGISTERED)
+                .payload(payload)
+                .build());
     }
 
     //로그인

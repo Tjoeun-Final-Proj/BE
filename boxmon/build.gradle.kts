@@ -73,6 +73,9 @@ dependencies {
     
     //Firebase Cloud Messaging
     implementation("com.google.firebase:firebase-admin:9.2.0")
+
+    //Web Soket
+    implementation ("org.springframework:spring-messaging")
 }
 
 tasks.withType<Test> {
