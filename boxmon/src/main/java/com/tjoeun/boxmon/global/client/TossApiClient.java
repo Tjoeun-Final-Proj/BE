@@ -30,6 +30,7 @@ public class TossApiClient {
         this.tossJweCrypto = tossJweCrypto;
     }
     
+    //평문 body를 쓰는 post 요청
     private ResponseEntity<Map<String,Object>> postPlain(Map<String, Object> requestBody, String uri){
         ResponseEntity<Map<String,Object>> result = client.post()
                 .uri(uri)
@@ -56,6 +57,7 @@ public class TossApiClient {
         return result;
     }
 
+    //JWE 암호화를 사용하는 post 요청
     private Map<String,Object> postEncrypted(Map<String, Object> requestBody, String uri) {
         String jweBody = tossJweCrypto.encryptToCompactJwe(requestBody);
         ResponseEntity<String> encryptedResponse = client.post()
