@@ -21,6 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -96,5 +98,19 @@ public class ContactService {
                 .contactAttatchment(imageUrls)
                 .build();
     }
+
+    //사용자 문의 조회
+    @Transactional(readOnly = true)
+    public Map<Contact, List<ContactAttatchment>> getContact(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
+
+        List<Contact> contacts = contactRepository.findAllByUserId(user);
+        List<ContactAttatchment> attatchments = attatchmentRepository.findByContactIdIn(contacts);
+        Map<Contact, List<ContactAttatchment>> attachmentMap = attatchments.stream()
+                .collect(Collectors.groupingBy(ContactAttatchment::getContactId));
+        return attachmentMap;
+    }
+
 
 }

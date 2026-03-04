@@ -23,8 +23,8 @@ public class AdminController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Void> createAdmin(@RequestBody AdminRequest request) {
-        adminService.createAdmin(request);
+    public ResponseEntity<Void> createAdmin(@AuthenticationPrincipal Long adminId, @RequestBody AdminRequest request) {
+        adminService.createAdmin(adminId, request);
         return ResponseEntity.ok().build();
     }
 
