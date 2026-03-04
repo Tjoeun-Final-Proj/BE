@@ -6,7 +6,6 @@ import com.tjoeun.boxmon.exception.ShipmentStateConflictException;
 import com.tjoeun.boxmon.exception.UserNotFoundException;
 import com.tjoeun.boxmon.feature.notification.service.NotificationUseCase;
 import com.tjoeun.boxmon.feature.settlement.service.SettlementNotifier;
-import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;

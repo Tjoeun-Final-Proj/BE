@@ -1,6 +1,5 @@
 package com.tjoeun.boxmon.feature.settlement.domain;
 
-import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -41,6 +40,10 @@ public class Settlement {
     
     @Column(name = "policy_version", nullable = false)
     private String policyVersion;
+    
+    @Getter
+    @Column(name = "last_check_at")
+    private LocalDateTime lastCheckAt;
 
     @Builder
     public Settlement(Shipment shipment, SettlementStatus settlementStatus, LocalDateTime settleScheduledAt, String policyVersion) {

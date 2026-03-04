@@ -1,7 +1,6 @@
 package com.tjoeun.boxmon.feature.shipment.dto;
 
 import com.tjoeun.boxmon.feature.settlement.dto.SettlementViewStatus;
-import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import lombok.Builder;
 import lombok.Getter;
 

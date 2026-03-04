@@ -1,6 +1,8 @@
 package com.tjoeun.boxmon.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -8,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
 @RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE)
 public class ExceptionController {
     // 사용자 미존재 에러를 400(Bad Request)으로 변환
     @ExceptionHandler(UserNotFoundException.class)
@@ -54,6 +57,17 @@ public class ExceptionController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
     }
 
+    // 중복 요청일때 409(Conflict)로 변환
+    @ExceptionHandler(ConcurrentRequestExceedException.class)
+    public ResponseEntity<String> concurrentRequestExceedException(ConcurrentRequestExceedException e){
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+    }
+    
+    // 지정된 요청 빈도를 넘긴 경우 429(Too Many Requests)로 변환
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<String> rateLimitExceededException(RateLimitExceededException e){
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).header("Retry-After",e.getRetryAfter()).body(e.getMessage());
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(Exception e){

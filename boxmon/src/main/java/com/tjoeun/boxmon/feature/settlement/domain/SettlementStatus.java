@@ -1,4 +1,4 @@
-package com.tjoeun.boxmon.feature.shipment.domain;
+package com.tjoeun.boxmon.feature.settlement.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

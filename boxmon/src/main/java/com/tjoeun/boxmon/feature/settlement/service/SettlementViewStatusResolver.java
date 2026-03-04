@@ -18,7 +18,7 @@ public class SettlementViewStatusResolver {
     //정산상태 변환용(토스 api를 사용하지 않고 DB 조회로만 처리, 실제 유효성은 정산 요청 시에 정산 모듈이 별도 확인)
     public SettlementViewStatus resolve(Shipment shipment) {
         //정산 상태 확인
-        Optional<Settlement> optionalSettlement = settlementRepository.findByShipment(shipment);
+        Optional<Settlement> optionalSettlement = settlementRepository.findByShipment_ShipmentId(shipment.getShipmentId());
         
         //정산 상태가 저장되지 않은 경우(운송상태가 배차완료~운송중인 경우)
         if(optionalSettlement.isEmpty())

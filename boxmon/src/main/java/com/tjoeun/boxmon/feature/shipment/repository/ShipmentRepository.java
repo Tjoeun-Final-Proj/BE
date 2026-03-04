@@ -1,7 +1,7 @@
 package com.tjoeun.boxmon.feature.shipment.repository;
 
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
-import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
+import com.tjoeun.boxmon.feature.settlement.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
