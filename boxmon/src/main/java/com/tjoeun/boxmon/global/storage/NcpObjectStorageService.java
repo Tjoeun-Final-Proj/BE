@@ -127,6 +127,11 @@ public class NcpObjectStorageService implements ObjectStorageService {
         return uploadImage(file, "inquiries");
     }
 
+    @Override
+    public String uploadChatImage(MultipartFile file) {
+        return uploadImage(file, "chat/images");
+    }
+
     /**
      * 파일의 Content-Type을 분석하여 적절한 확장자를 반환합니다.
      */
