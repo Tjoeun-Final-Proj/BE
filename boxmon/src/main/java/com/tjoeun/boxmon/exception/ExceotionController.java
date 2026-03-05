@@ -63,7 +63,13 @@ public class ExceotionController {
     public ResponseEntity<String> chatValidationException(ChatValidationException e) {
         return ResponseEntity.badRequest().body(e.getMessage());
     }
-      
+
+    //비밀번호 오류
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ResponseEntity<String> InvalidPasswordException(ChatValidationException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
     // 문의 테이블 없을때 404(Not Found)로 변환
     @ExceptionHandler(ContactNotFoundException.class)
     public ResponseEntity<String> contactNotFoundException(ContactNotFoundException e){
