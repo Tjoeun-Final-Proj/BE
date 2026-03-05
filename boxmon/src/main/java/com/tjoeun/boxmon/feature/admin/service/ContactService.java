@@ -1,16 +1,17 @@
 package com.tjoeun.boxmon.feature.admin.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tjoeun.boxmon.exception.ContactNotFoundException;
 import com.tjoeun.boxmon.exception.UserNotFoundException;
-import com.tjoeun.boxmon.feature.admin.domain.Admin;
-import com.tjoeun.boxmon.feature.admin.domain.Contact;
-import com.tjoeun.boxmon.feature.admin.domain.ContactAttatchment;
+import com.tjoeun.boxmon.feature.admin.domain.*;
 import com.tjoeun.boxmon.feature.admin.dto.ContactAnswerDto;
 import com.tjoeun.boxmon.feature.admin.dto.ContactDetailDto;
 import com.tjoeun.boxmon.feature.admin.dto.ContactDto;
 import com.tjoeun.boxmon.feature.admin.repository.AdminRepository;
 import com.tjoeun.boxmon.feature.admin.repository.AttatchmentRepository;
 import com.tjoeun.boxmon.feature.admin.repository.ContactRepository;
+import com.tjoeun.boxmon.feature.admin.repository.EventLogRepository;
 import com.tjoeun.boxmon.feature.user.domain.User;
 import com.tjoeun.boxmon.feature.user.repository.UserRepository;
 import com.tjoeun.boxmon.global.storage.NcpObjectStorageService;
@@ -33,6 +34,8 @@ public class ContactService {
     private final AdminRepository adminRepository;
     private final NcpObjectStorageService storageService;
     private final AttatchmentRepository attatchmentRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final EventLogRepository eventLogRepository;
 
     //문의 생성
     public void createContact(Long userId, ContactDto request) {
@@ -64,6 +67,7 @@ public class ContactService {
     }
 
     //문의 답변
+    @Transactional
     public void createAnswer(Long adminId, ContactAnswerDto request){
         Admin admin = adminRepository.findByAdminId(adminId)
                 .orElseThrow(()-> new UserNotFoundException("관리자 없음"));
@@ -73,6 +77,16 @@ public class ContactService {
         contact.setAnsweredAt(LocalDateTime.now());
         contact.setAnswerContent(request.getAnswerContent());
         contactRepository.save(contact);
+
+        String logMessage = String.format("%s번 문의 답변 완료", contact.getContactId());
+        JsonNode payload = objectMapper.valueToTree(logMessage);
+
+
+        eventLogRepository.save(EventLog.builder()
+                .admin(admin)
+                .eventType(AdminEventType.CONTACT_ANSWERED)
+                .payload(payload)
+                .build());
     }
 
     //문의 목록 조회

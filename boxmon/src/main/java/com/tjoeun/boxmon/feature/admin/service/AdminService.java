@@ -52,17 +52,13 @@ public class AdminService {
         Admin admin = new Admin(
                 adminRequest.getLoginId(),
                 encoder.encode(adminRequest.getPassword()),
-                adminRequest.getName()
+                adminRequest.getName(),
+                Boolean.FALSE
         );
 
         adminRepository.save(admin);
 
-        // %d(ID:%d) 형식을 맞추기 위해 이름과 ID를 각각 넣어줍니다.
-        String logMessage = String.format("%s(ID:%d)가 %s(ID:%d)를 생성",
-                currentAdmin.getName(), currentAdmin.getAdminId(),
-                admin.getName(), admin.getAdminId());
-
-        // 팀원 방식대로 objectMapper를 사용해 JsonNode로 변환합니다.
+        String logMessage = String.format("관리자 %s 계정 생성", adminRequest.getName());
         JsonNode payload = objectMapper.valueToTree(logMessage);
 
         eventLogRepository.save(EventLog.builder()
@@ -99,19 +95,42 @@ public class AdminService {
 
     //관리자 목록 조회
     public List<Admin> getAdminList() {
-        List<Admin> admins = adminRepository.findAll();
+        List<Admin> admins = adminRepository.findAllByIsDelete();
         return admins;
     }
 
     //관리자 계정 탈퇴
     @Transactional
-    public void deleteAdmin(Long adminId, String pw){
+    public void deleteAdmin(Long adminId, String pw) {
         Admin admin = adminRepository.findByAdminId(adminId)
-                .orElseThrow();
-        if(!passwordEncoder.matches(pw, admin.getPassword())){
+                .orElseThrow(() -> new UserNotFoundException("관리자 없음"));
+
+        if (!passwordEncoder.matches(pw, admin.getPassword())) {
             throw new InvalidPasswordException("비밀번호 불일치");
         }
-        adminRepository.deleteById(adminId);
+
+        String logMessage = String.format("관리자 %s 탈퇴", admin.getName());
+        JsonNode payload = objectMapper.valueToTree(logMessage);
+
+        eventLogRepository.save(EventLog.builder()
+                .admin(admin)
+                .eventType(AdminEventType.ADMIN_DELETED)
+                .payload(payload)
+                .build());
+
+        if(admin.getIsDelete()){
+            return;
+        }
+
+        // 삭제된 사용자 수를 세어서 다음 번호 결정
+        long deletedCount = adminRepository.countDeletedAdmins();
+        String deletedId = (deletedCount + 1) + "deleteId";
+
+        admin.setPassword("deleteAccount");
+        admin.setIsDelete(true);
+
+        adminRepository.save(admin);
+
         em.flush();
     }
 
