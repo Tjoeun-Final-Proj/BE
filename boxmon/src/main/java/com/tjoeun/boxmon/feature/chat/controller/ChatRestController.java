@@ -22,10 +22,18 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
+/**
+ * 채팅 REST API 컨트롤러.
+ * 채팅 이력 조회와 이미지 업로드 엔드포인트를 제공합니다.
+ */
 public class ChatRestController {
 
     private final ChatService chatService;
 
+    /**
+     * 특정 운송건 채팅 이력을 조회합니다.
+     * 헤더의 사용자 정보(X-USER-ID, X-USER-ROLE)로 참여자 권한을 검증합니다.
+     */
     @GetMapping("/{shipmentId}/messages")
     public ResponseEntity<ChatHistoryResponse> getMessages(
             @PathVariable Long shipmentId,
@@ -37,6 +45,10 @@ public class ChatRestController {
         return ResponseEntity.ok(new ChatHistoryResponse(messages));
     }
 
+    /**
+     * 채팅 이미지 파일을 업로드하고 공개 URL을 반환합니다.
+     * 반환된 URL은 STOMP 채팅 메시지(IMG_URL) 전송에 사용됩니다.
+     */
     @PostMapping(value = "/{shipmentId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ChatImageUploadResponse> uploadImage(
             @PathVariable Long shipmentId,
