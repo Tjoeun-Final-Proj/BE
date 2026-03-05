@@ -42,8 +42,12 @@ public class ShipmentCancelService {
             UserRoleInShipment role = resolveUserRole(shipment, userId);
             ShipmentStatus status = shipment.getShipmentStatus();
 
-            if (status == ShipmentStatus.DONE || status == ShipmentStatus.CANCELED) {
-                throw new ShipmentStateConflictException("취소할 수 없는 상태입니다.");
+            if (status == ShipmentStatus.CANCELED) {
+                return; // 멱등성 보장: 이미 취소된 상태라면 성공으로 처리
+            }
+
+            if (status == ShipmentStatus.DONE) {
+                throw new ShipmentStateConflictException("이미 완료된 배송은 취소할 수 없습니다.");
             }
 
             if (status == ShipmentStatus.REQUESTED) {
