@@ -110,5 +110,3 @@ git clone https://github.com/your-repo/boxmon.git
 - **Project Period**: 2026.02 - 2026.03 (1 Month)
 
 ---
-
-이 내용이 마음에 드신다면, 제가 바로 `README.md` 파일을 생성하거나 기존 파일이 있다면 교체해 드릴 수 있습니다. 어떻게 할까요?
