@@ -141,7 +141,6 @@ public class UserService {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
         if(!passwordEncoder.matches(pw, user.getPassword())){
-            log.info("pw: {}, encoded pw: {}, db pw: {}",pw, passwordEncoder.encode(pw),user.getPassword());
             throw new InvalidPasswordException("비밀번호 불일치");
         }
         if(user.getIsDelete()){

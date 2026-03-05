@@ -6,6 +6,7 @@ import com.tjoeun.boxmon.feature.admin.service.PenaltyService;
 import com.tjoeun.boxmon.feature.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,15 +20,15 @@ public class PenaltyController {
 
     //계정 정지
     @PostMapping("/suspension")
-    public ResponseEntity<Void> accountSuspension (@RequestBody Long userId){
-        penaltyService.accountSuspension(userId);
+    public ResponseEntity<Void> accountSuspension (@AuthenticationPrincipal Long adminId, @RequestBody Long userId){
+        penaltyService.accountSuspension(adminId, userId);
         return ResponseEntity.ok().build();
     }
 
     //계정 복구
     @PostMapping("/restoration")
-    public ResponseEntity<Void> accountRestoration (@RequestBody Long userId){
-        penaltyService.accountRestoration(userId);
+    public ResponseEntity<Void> accountRestoration (@AuthenticationPrincipal Long adminId, @RequestBody Long userId){
+        penaltyService.accountRestoration(adminId, userId);
         return ResponseEntity.ok().build();
     }
 
