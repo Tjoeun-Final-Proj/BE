@@ -1,7 +1,8 @@
-package com.tjoeun.boxmon.global.client;
+package com.tjoeun.boxmon.global.toss.client;
 
 import com.tjoeun.boxmon.exception.ExternalServiceException;
 import com.tjoeun.boxmon.feature.settlement.util.TossJweCrypto;
+import com.tjoeun.boxmon.global.toss.dto.TossPayment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -13,6 +14,7 @@ import org.springframework.web.client.RestClient;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Map;
 
 @Slf4j
@@ -28,6 +30,41 @@ public class TossApiClient {
                         "Basic " + Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8)))
                 .build();
         this.tossJweCrypto = tossJweCrypto;
+    }
+    //평문 body를 쓰는 get 요청
+    private <T> ResponseEntity<T> getPlainWith(Map<String, Object> requestParameter, String uri, Class<T> responseType){
+        //요청 파라미터 세팅
+        StringBuilder uriBuilder = new StringBuilder(uri);
+        if(!requestParameter.isEmpty()){
+            uriBuilder.append("?");
+            for(Map.Entry<String, Object> entry : requestParameter.entrySet()){
+                uriBuilder.append(entry.getKey()).append("=").append(entry.getValue());
+                uriBuilder.append("&");
+            }
+            uriBuilder.deleteCharAt(uriBuilder.length() - 1);
+        }
+        
+        ResponseEntity<T> result = client.get()
+                .uri(uriBuilder.toString())
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange((req, resp) -> {
+                    int raw = resp.getStatusCode().value();
+
+                    // 성공/실패 상관없이 Map으로 읽기 시도
+                    T body = null;
+                    try {
+                        body = resp.bodyTo(responseType);
+                    } catch (Exception ignore) {
+                        // 바디가 JSON이 아니거나 비어있으면 null 유지
+                    }
+
+                    return ResponseEntity.status(raw).headers(resp.getHeaders()).body(body);
+                });
+
+        if (result.getStatusCode().value()>=400)
+            throw new ExternalServiceException(String.format("토스 서버 통신 실패. 응답: %d %s", result.getStatusCode().value(), result.getBody()));
+
+        return result;
     }
     
     //평문 body를 쓰는 post 요청
@@ -52,7 +89,7 @@ public class TossApiClient {
                 });
 
         if (result.getStatusCode().value()>=400)
-            throw new ExternalServiceException("토스 서버 통신 실패. 응답: " + result.getBody());
+            throw new ExternalServiceException(String.format("토스 서버 통신 실패. 응답: %d %s", result.getStatusCode().value(), result.getBody()));
         
         return result;
     }
@@ -73,7 +110,8 @@ public class TossApiClient {
         Map<String, Object> decrypted = tossJweCrypto.decryptCompactJwe(encryptedResponse.getBody());
         
         if (encryptedResponse.getStatusCode().value()>=400)
-            throw new ExternalServiceException("토스 서버 통신 실패. 응답: " + decrypted);
+            throw new ExternalServiceException(
+                    String.format("토스 서버 통신 실패. 응답: %d %s", encryptedResponse.getStatusCode().value(), encryptedResponse.getBody()));
         
         return decrypted;
     }
@@ -123,5 +161,47 @@ public class TossApiClient {
         Map<String,Object> result = postEncrypted(requestBody,"/v2/sellers");
 
         log.debug("셀러 등록 성공. 응답: result={}",result);
+    }
+    
+    //특정 결제의 PG→플랫폼 정산 완료 여부 확인 
+    public boolean checkSettled(String orderId) {
+        log.info("결제 조회 API를 이용해 정산 여부를 확인합니다...");
+
+        TossPayment tossPaymentInfo = getPlainWith(Collections.emptyMap(), "/v1/payments/orders/"+orderId, TossPayment.class).getBody();
+        log.debug("정산여부 확인 성공. 응답: {}",tossPaymentInfo);
+
+        try {
+            return switch (tossPaymentInfo.getMethod()) {
+                case "계좌이체" -> 
+                        tossPaymentInfo.getTransfer()
+                                .getSettlementStatus()
+                                .equals("COMPLETED");
+                
+                case "휴대폰" -> 
+                        tossPaymentInfo.getMobilePhone()
+                                .getSettlementStatus()
+                                .equals("COMPLETED");
+                
+                case "문화상품권", "도서문화상품권", "게임문화상품권" ->
+                        tossPaymentInfo.getGiftCertificate()
+                                .getSettlementStatus()
+                                .equals("COMPLETED");
+
+                case "간편결제" -> //간편결제는 섞인 결제라서 정산여부 확인이 어려움 -> 일단 정산해주고 안 되면 토스 니가 잘못한거야ㅡㅡ
+                        true;
+                
+                case "카드" -> //카드는 결제 조회만으로는 정산여부 확인이 어려움 -> 결제조회에서 매입여부만 확인하고 매입이 끝났으면 더 이상 확인할 방법이 없음
+                    //매입 완료 여부 확인
+                    tossPaymentInfo.getCard()
+                            .getAcquireStatus()
+                            .equals("COMPLETED");
+                
+                default -> throw new IllegalStateException(
+                        "알 수 없는 결제 수단으로 진행된 결제에 대한 조회가 발생했습니다. 결제 로그를 확인해주세요. orderId: " + orderId);
+            };
+        }
+        catch (NullPointerException e){
+            throw new ExternalServiceException("토스 api 응답 파싱에 실패했습니다. 응답: " + tossPaymentInfo);
+        }
     }
 }

@@ -4,7 +4,7 @@ import com.tjoeun.boxmon.exception.ExternalServiceException;
 import com.tjoeun.boxmon.feature.payment.exception.PaymentConfirmConflictException;
 import com.tjoeun.boxmon.feature.payment.domain.Payment;
 import com.tjoeun.boxmon.feature.payment.repository.PaymentLogRepository;
-import com.tjoeun.boxmon.global.client.TossApiClient;
+import com.tjoeun.boxmon.global.toss.client.TossApiClient;
 import com.tjoeun.boxmon.feature.payment.domain.PaymentLog;
 import com.tjoeun.boxmon.feature.payment.dto.ConfirmPaymentRequest;
 import com.tjoeun.boxmon.feature.payment.mapper.PaymentMapper;

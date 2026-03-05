@@ -14,7 +14,7 @@ import com.tjoeun.boxmon.feature.settlement.service.SettlementNotifier;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.user.domain.Driver;
 import com.tjoeun.boxmon.feature.user.domain.User;
-import com.tjoeun.boxmon.global.client.TossApiClient;
+import com.tjoeun.boxmon.global.toss.client.TossApiClient;
 import com.tjoeun.boxmon.global.util.SystemSettingProvider;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -105,9 +105,18 @@ public class SettlementServiceImpl implements DriverRegisterUseCase, SettlementN
             );
         }
         
-        //TODO TossApiClient 함수 호출: orderId를 이용하여 플랫폼 정산 완료 여부 확인
+        //정산 예정일이 지났는지 확인
+        if(LocalDateTime.now().isBefore(settlement.getSettleScheduledAt())){ //정산 예정일이 아직 안 지났으면
+            throw new SettlementConflictException("정산 가능 시점 이전입니다.");
+        }
+        
+        //플랫폼 정산 완료 여부 확인
+        if(!tossApiClient.checkSettled(String.format("%06d", shipmentId))) {
+            settlement.setLastCheckAt(LocalDateTime.now());
+            throw new SettlementConflictException("토스 서버 점검으로 인해 정산이 지연되고 있습니다. 1~2시간 후 다시 시도해주세요.");
+        }
+        
         //TODO 결과에 따라 분기
         //  성공시: TossApiClient의 지급대행 api 호출
-        //  실패시: 409 “토스 서버 점검으로 인해 정산이 지연되고 있습니다. 1~2시간 후 다시 시도해주세요.” + Retry-After 헤더 + lastCheckAt 기록
     }
 }

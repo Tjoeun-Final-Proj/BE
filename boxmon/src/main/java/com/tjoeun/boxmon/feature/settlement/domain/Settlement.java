@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
@@ -42,6 +43,7 @@ public class Settlement {
     private String policyVersion;
     
     @Getter
+    @Setter
     @Column(name = "last_check_at")
     private LocalDateTime lastCheckAt;
 
