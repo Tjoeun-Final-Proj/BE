@@ -4,12 +4,14 @@ import com.tjoeun.boxmon.exception.RoleAccessDeniedException;
 import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.feature.admin.dto.AdminAssignedShipmentBasicResponse;
 import com.tjoeun.boxmon.feature.admin.dto.AdminAssignedShipmentDetailResponse;
+import com.tjoeun.boxmon.feature.admin.dto.AdminForceCancelRequest;
 import com.tjoeun.boxmon.feature.admin.dto.AdminUnassignedShipmentBasicResponse;
 import com.tjoeun.boxmon.feature.admin.dto.AdminUnassignedShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.admin.repository.AdminRepository;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
+import com.tjoeun.boxmon.feature.shipment.service.ShipmentCancelService;
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ public class AdminShipmentServiceImpl implements AdminShipmentService {
 
     private final AdminRepository adminRepository;
     private final ShipmentRepository shipmentRepository;
+    private final ShipmentCancelService shipmentCancelService;
 
     @Override
     public List<AdminUnassignedShipmentBasicResponse> getUnassignedBasic(Long adminId) {
@@ -70,6 +73,13 @@ public class AdminShipmentServiceImpl implements AdminShipmentService {
                 .orElseThrow(() -> new ShipmentNotFoundException("배차(요청제외) 화물을 찾을 수 없습니다."));
 
         return toAssignedDetailResponse(shipment);
+    }
+
+    @Override
+    @Transactional
+    public void forceCancel(Long adminId, Long shipmentId, AdminForceCancelRequest request) {
+        validateAdminAccess(adminId);
+        shipmentCancelService.forceCancelByAdmin(shipmentId, request.getReason());
     }
 
     private void validateAdminAccess(Long adminId) {
