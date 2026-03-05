@@ -40,10 +40,10 @@ public class SettlementServiceImpl implements DriverRegisterUseCase, SettlementN
 
     //차주를 셀러로 등록
     @Override
-    public void registerDriver(Driver driver) {
+    public String registerDriver(Driver driver) {
         User user = driver.getUser();
         String normalizedId = String.format("%7d",driver.getDriverId());
-        tossApiClient.registerDriver(
+        return tossApiClient.registerDriver(
                 normalizedId,
                 user.getName(),
                 user.getEmail(),

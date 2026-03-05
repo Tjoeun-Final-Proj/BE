@@ -3,6 +3,7 @@ package com.tjoeun.boxmon.global.toss.client;
 import com.tjoeun.boxmon.exception.ExternalServiceException;
 import com.tjoeun.boxmon.feature.settlement.util.TossJweCrypto;
 import com.tjoeun.boxmon.global.toss.dto.TossPayment;
+import com.tjoeun.boxmon.global.toss.dto.TossSeller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -95,7 +96,7 @@ public class TossApiClient {
     }
 
     //JWE 암호화를 사용하는 post 요청
-    private Map<String,Object> postEncrypted(Map<String, Object> requestBody, String uri) {
+    private <T> T postEncrypted(Map<String, Object> requestBody, String uri, Class<T> responseType) {
         String jweBody = tossJweCrypto.encryptToCompactJwe(requestBody);
         ResponseEntity<String> encryptedResponse = client.post()
                 .uri(uri)
@@ -107,7 +108,7 @@ public class TossApiClient {
                     String body = response.bodyTo(String.class); // JWE 문자열
                     return ResponseEntity.status(status).body(body);
                 });
-        Map<String, Object> decrypted = tossJweCrypto.decryptCompactJwe(encryptedResponse.getBody());
+        T decrypted = tossJweCrypto.decryptCompactJwe(encryptedResponse.getBody(), responseType);
         
         if (encryptedResponse.getStatusCode().value()>=400)
             throw new ExternalServiceException(
@@ -141,7 +142,7 @@ public class TossApiClient {
     }
     
     //차주의 셀러등록 요청
-    public void registerDriver(String driverId, String name, String email, String phone, String bankCode, String accountNumber, String accountHolderName){
+    public String registerDriver(String driverId, String name, String email, String phone, String bankCode, String accountNumber, String accountHolderName){
         log.info("차주의 셀러등록을 요청합니다...");
         Map<String, Object> requestBody = Map.of(
                 "refSellerId", driverId,
@@ -158,9 +159,10 @@ public class TossApiClient {
                 )
         );
 
-        Map<String,Object> result = postEncrypted(requestBody,"/v2/sellers");
+        TossSeller result = postEncrypted(requestBody,"/v2/sellers", TossSeller.class);
 
         log.debug("셀러 등록 성공. 응답: result={}",result);
+        return result.getId();
     }
     
     //특정 결제의 PG→플랫폼 정산 완료 여부 확인 
@@ -203,5 +205,13 @@ public class TossApiClient {
         catch (NullPointerException e){
             throw new ExternalServiceException("토스 api 응답 파싱에 실패했습니다. 응답: " + tossPaymentInfo);
         }
+    }
+    
+    //차주에게 정산(지급대행)
+    public void settleDriver(String shipmentId) {
+        Map<String,Object> requestBody = Map.of(
+                "refPayoutId", shipmentId,
+                
+        )
     }
 }

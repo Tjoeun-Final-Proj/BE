@@ -7,7 +7,6 @@ import com.tjoeun.boxmon.feature.settlement.exception.JweDecryptException;
 import com.tjoeun.boxmon.feature.settlement.exception.JweEncryptException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.OffsetDateTime;
@@ -44,12 +43,12 @@ public class TossJweCrypto {
         }
     }
 
-    public Map<String,Object> decryptCompactJwe(String compactJwe) {
+    public <T> T decryptCompactJwe(String compactJwe, Class<T> responseType) {
         try {
             JWEObject jwe = JWEObject.parse(compactJwe);
             jwe.decrypt(new DirectDecrypter(securityKey));
             String json = jwe.getPayload().toString(); // decrypted JSON string
-            return objectMapper.readValue(json, new TypeReference<>(){});
+            return objectMapper.readValue(json, responseType);
         } catch (Exception e) {
             throw new JweDecryptException("JWE 복호화 중 문제가 발생했습니다.",e);
         }
