@@ -105,7 +105,7 @@ public class UserService {
 
         UserType userType = user.getUserType();
 
-        return new LoginResponse(accessToken, refreshToken, userType);
+        return new LoginResponse(accessToken, refreshToken, userType, user.getName());
     }
 
     // 회원 정보 수정
