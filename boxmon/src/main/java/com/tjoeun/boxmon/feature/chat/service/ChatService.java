@@ -10,11 +10,13 @@ import com.tjoeun.boxmon.feature.chat.dto.ChatImageUploadResponse;
 import com.tjoeun.boxmon.feature.chat.dto.ChatMessageResponse;
 import com.tjoeun.boxmon.feature.chat.dto.ChatSendRequest;
 import com.tjoeun.boxmon.feature.chat.repository.ChatRepository;
+import com.tjoeun.boxmon.feature.notification.service.NotificationUseCase;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.global.storage.ObjectStorageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +25,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -31,6 +34,7 @@ public class ChatService {
     private final ChatRepository chatRepository;
     private final ShipmentRepository shipmentRepository;
     private final ObjectStorageService objectStorageService;
+    private final NotificationUseCase notificationUseCase;
 
     public List<ChatMessageResponse> getMessages(Long shipmentId, Long userId, ChatSenderRole role) {
         Shipment shipment = getShipment(shipmentId);
@@ -57,6 +61,13 @@ public class ChatService {
                         .contentType(request.getContentType())
                         .build()
         );
+
+        try {
+            // 채팅 저장/전송 흐름은 유지하고 알림 실패는 경고 로그로만 처리
+            notificationUseCase.notifyChatMessage(shipmentId, senderId);
+        } catch (Exception e) {
+            log.warn("채팅 전송은 성공했지만 알림 전송은 건너뜁니다. shipmentId={}", shipmentId, e);
+        }
 
         return toResponse(saved);
     }
