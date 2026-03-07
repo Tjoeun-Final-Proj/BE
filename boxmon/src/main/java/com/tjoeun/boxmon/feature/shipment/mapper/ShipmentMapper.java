@@ -29,6 +29,8 @@ public interface ShipmentMapper {
     @Mapping(target = "shipperName", source = "shipper.user.name")
     @Mapping(target = "driverId", expression = "java(shipment.getDriver() != null ? shipment.getDriver().getDriverId() : null)")
     @Mapping(target = "driverName", expression = "java(shipment.getDriver() != null ? shipment.getDriver().getUser().getName() : \"미배차\")")
+    @Mapping(target = "shipperCancelToggle", source = "shipperCancelToggle")
+    @Mapping(target = "driverCancelToggle", source = "driverCancelToggle")
     @Mapping(target = "currentDriverPoint", source = "currentLocationPoint", qualifiedByName = "toSpringPoint")
     @Mapping(target = "cargoType", source = "cargoType", qualifiedByName = "toCargoDescription")
     @Mapping(target = "vehicleType", source = "vehicleType", qualifiedByName = "toVehicleDescription")
