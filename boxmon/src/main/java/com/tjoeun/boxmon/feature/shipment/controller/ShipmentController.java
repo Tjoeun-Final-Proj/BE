@@ -4,6 +4,7 @@ import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.service.ShipmentService;
@@ -250,9 +251,9 @@ public class ShipmentController {
     @ApiResponse(responseCode = "401", description = "인증 실패")
     @ApiResponse(responseCode = "403", description = "화주 권한 없음")
     @GetMapping("/my/unassigned")
-    public ResponseEntity<List<UnassignedShipmentResponse>> getMyUnassignedShipments(Authentication authentication) {
+    public ResponseEntity<List<MyUnassignedShipmentResponse>> getMyUnassignedShipments(Authentication authentication) {
         Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
-        List<UnassignedShipmentResponse> response = shipmentService.getMyUnassignedShipments(shipperId);
+        List<MyUnassignedShipmentResponse> response = shipmentService.getMyUnassignedShipments(shipperId);
         return ResponseEntity.ok(response);
     }
 
