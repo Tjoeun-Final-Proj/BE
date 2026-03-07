@@ -4,6 +4,7 @@ import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
@@ -82,13 +83,13 @@ public class ShipmentQueryService {
     /**
      * 화주 본인이 등록한 미배차(REQUESTED) 목록 조회.
      */
-    public List<UnassignedShipmentResponse> getMyUnassignedShipments(Long shipperId) {
+    public List<MyUnassignedShipmentResponse> getMyUnassignedShipments(Long shipperId) {
         support.validateShipperAccess(shipperId);
         List<Shipment> shipments = shipmentRepository
                 .findByShipper_ShipperIdAndShipmentStatusOrderByCreatedAtDesc(shipperId, ShipmentStatus.REQUESTED);
 
         return shipments.stream()
-                .map(shipmentMapper::toUnassignedShipmentResponse)
+                .map(shipmentMapper::toMyUnassignedShipmentResponse)
                 .collect(Collectors.toList());
     }
 
