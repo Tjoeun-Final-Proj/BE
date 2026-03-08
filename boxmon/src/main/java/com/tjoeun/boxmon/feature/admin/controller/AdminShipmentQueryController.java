@@ -2,6 +2,7 @@ package com.tjoeun.boxmon.feature.admin.controller;
 
 import com.tjoeun.boxmon.feature.admin.dto.AdminAssignedShipmentBasicResponse;
 import com.tjoeun.boxmon.feature.admin.dto.AdminAssignedShipmentDetailResponse;
+import com.tjoeun.boxmon.feature.admin.dto.AdminForceCancelRequest;
 import com.tjoeun.boxmon.feature.admin.dto.AdminUnassignedShipmentBasicResponse;
 import com.tjoeun.boxmon.feature.admin.dto.AdminUnassignedShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.admin.service.AdminShipmentService;
@@ -11,13 +12,18 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -113,5 +119,23 @@ public class AdminShipmentQueryController {
     ) {
         Long adminId = Long.valueOf(authentication.getPrincipal().toString());
         return ResponseEntity.ok(adminShipmentService.getAssignedDetail(adminId, shipmentId));
+    }
+
+    @Operation(summary = "관리자 화물 강제취소", description = "관리자가 화물 운송건을 강제로 취소합니다.")
+    @ApiResponse(responseCode = "204", description = "강제취소 성공")
+    @ApiResponse(responseCode = "400", description = "잘못된 요청 본문")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "관리자 권한 없음")
+    @ApiResponse(responseCode = "404", description = "화물을 찾을 수 없음")
+    @ApiResponse(responseCode = "409", description = "완료된 운송건은 취소 불가")
+    @PostMapping("/shipments/{shipmentId}/force-cancel")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void forceCancel(
+            Authentication authentication,
+            @Parameter(description = "화물 ID", example = "1") @PathVariable(name = "shipmentId") Long shipmentId,
+            @RequestBody @Valid AdminForceCancelRequest request
+    ) {
+        Long adminId = Long.valueOf(authentication.getPrincipal().toString());
+        adminShipmentService.forceCancel(adminId, shipmentId, request);
     }
 }
