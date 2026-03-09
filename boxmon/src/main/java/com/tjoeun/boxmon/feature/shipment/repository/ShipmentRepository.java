@@ -1,7 +1,6 @@
 package com.tjoeun.boxmon.feature.shipment.repository;
 
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
-import com.tjoeun.boxmon.feature.settlement.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -55,40 +54,6 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
     );
 
     /**
-     * 특정 화주의 특정 기간 내 지정된 정산 상태의 배송 목록을 생성일자 내림차순으로 조회합니다.
-     *
-     * @param shipperId 화주 ID
-     * @param startDate 조회 시작일시
-     * @param endDate 조회 종료일시
-     * @param settlementStatus 정산 상태
-     * @return 조건에 해당하는 배송 목록
-     */
-    List<Shipment> findByShipper_ShipperIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
-            Long shipperId,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
-            SettlementStatus settlementStatus
-    );
-
-    /**
-     * 특정 화주의 특정 기간 내 지정된 배송 상태와 정산 상태의 배송 목록을 생성일자 내림차순으로 조회합니다.
-     *
-     * @param shipperId 화주 ID
-     * @param startDate 조회 시작일시
-     * @param endDate 조회 종료일시
-     * @param shipmentStatus 배송 상태
-     * @param settlementStatus 정산 상태
-     * @return 조건에 해당하는 배송 목록
-     */
-    List<Shipment> findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
-            Long shipperId,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
-            ShipmentStatus shipmentStatus,
-            SettlementStatus settlementStatus
-    );
-
-    /**
      * 특정 운송 기사의 특정 기간 내 모든 배송 목록을 생성일자 내림차순으로 조회합니다.
      *
      * @param driverId 운송 기사 ID
@@ -116,40 +81,6 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
             LocalDateTime startDate,
             LocalDateTime endDate,
             ShipmentStatus shipmentStatus
-    );
-
-    /**
-     * 특정 운송 기사의 특정 기간 내 지정된 정산 상태의 배송 목록을 생성일자 내림차순으로 조회합니다.
-     *
-     * @param driverId 운송 기사 ID
-     * @param startDate 조회 시작일시
-     * @param endDate 조회 종료일시
-     * @param settlementStatus 정산 상태
-     * @return 조건에 해당하는 배송 목록
-     */
-    List<Shipment> findByDriver_DriverIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
-            Long driverId,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
-            SettlementStatus settlementStatus
-    );
-
-    /**
-     * 특정 운송 기사의 특정 기간 내 지정된 배송 상태와 정산 상태의 배송 목록을 생성일자 내림차순으로 조회합니다.
-     *
-     * @param driverId 운송 기사 ID
-     * @param startDate 조회 시작일시
-     * @param endDate 조회 종료일시
-     * @param shipmentStatus 배송 상태
-     * @param settlementStatus 정산 상태
-     * @return 조건에 해당하는 배송 목록
-     */
-    List<Shipment> findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
-            Long driverId,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
-            ShipmentStatus shipmentStatus,
-            SettlementStatus settlementStatus
     );
 
     /**

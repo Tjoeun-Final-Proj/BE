@@ -3,8 +3,10 @@ package com.tjoeun.boxmon.feature.shipment.service;
 import com.tjoeun.boxmon.exception.RoleAccessDeniedException;
 import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.exception.ShipmentStateConflictException;
+import com.tjoeun.boxmon.feature.settlement.domain.Settlement;
 import com.tjoeun.boxmon.feature.settlement.service.SettlementViewStatusResolver;
 import com.tjoeun.boxmon.feature.settlement.domain.SettlementStatus;
+import com.tjoeun.boxmon.feature.settlement.repository.SettlementRepository;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.*;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 public class ShipmentSettlementService {
 
     private final ShipmentRepository shipmentRepository;
+    private final SettlementRepository settlementRepository;
     private final ShipmentDomainSupport support;
     private final ShipmentMapper shipmentMapper;
     private final SettlementViewStatusResolver settlementViewStatusResolver;
@@ -157,7 +160,10 @@ public class ShipmentSettlementService {
         List<Shipment> filteredShipments = excludeCanceledShipments(shipments);
 
         return filteredShipments.stream()
-                .map(shipmentMapper::toDriverSettlementListResponse)
+                .map(shipment -> shipmentMapper.toDriverSettlementListResponse(
+                        shipment,
+                        settlementViewStatusResolver.resolve(shipment)
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -168,28 +174,24 @@ public class ShipmentSettlementService {
             ShipmentStatus shipmentStatus,
             SettlementStatus settlementStatus
     ) {
-        if (shipmentStatus != null && settlementStatus != null) {
+        if (settlementStatus == null) {
+            if (shipmentStatus != null) {
+                return shipmentRepository
+                        .findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
+                                shipperId, start, end, shipmentStatus
+                        );
+            }
             return shipmentRepository
-                    .findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
-                            shipperId, start, end, shipmentStatus, settlementStatus
+                    .findByShipper_ShipperIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+                            shipperId, start, end
                     );
         }
-        if (shipmentStatus != null) {
-            return shipmentRepository
-                    .findByShipper_ShipperIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
-                            shipperId, start, end, shipmentStatus
-                    );
-        }
-        if (settlementStatus != null) {
-            return shipmentRepository
-                    .findByShipper_ShipperIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
-                            shipperId, start, end, settlementStatus
-                    );
-        }
-        return shipmentRepository
-                .findByShipper_ShipperIdAndCreatedAtBetweenOrderByCreatedAtDesc(
-                        shipperId, start, end
-                );
+
+        return settlementRepository.findShipperSettlementsForPeriod(
+                        shipperId, start, end, shipmentStatus, settlementStatus
+                ).stream()
+                .map(Settlement::getShipment)
+                .collect(Collectors.toList());
     }
 
     private List<Shipment> findDriverSettlementShipments(
