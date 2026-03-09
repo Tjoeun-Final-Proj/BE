@@ -49,7 +49,6 @@ public interface ShipmentCreateMapper {
     @Mapping(target = "cargoPhotoUrl", source = "cargoPhotoUrl")
     @Mapping(target = "companyName", source = "normalizedCompanyName")
     @Mapping(target = "shipmentStatus", constant = "REQUESTED")
-    @Mapping(target = "settlementStatus", constant = "INELIGIBLE")
     Shipment toShipment(
             Shipper shipper,
             ShipmentCreateRequest request,

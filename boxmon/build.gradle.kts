@@ -77,7 +77,7 @@ dependencies {
     implementation("com.nimbusds:nimbus-jose-jwt:9.40")
 
     //Web Soket
-    implementation ("org.springframework:spring-messaging")
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
 }
 
 tasks.withType<Test> {
