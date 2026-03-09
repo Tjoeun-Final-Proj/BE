@@ -62,9 +62,8 @@ public interface ShipmentMapper {
         return response;
     }
 
-    @Mapping(target = "price", source = "price", qualifiedByName = "roundMoney")
-    @Mapping(target = "shipmentStatus", source = "shipmentStatus", qualifiedByName = "toShipmentStatusDescription")
-    @Mapping(target = "settlementStatus", source = "settlementViewStatus")
+    @Mapping(target = "price", source = "shipment.price", qualifiedByName = "roundMoney")
+    @Mapping(target = "shipmentStatus", source = "shipment.shipmentStatus", qualifiedByName = "toShipmentStatusDescription")
     ShipperSettlementListResponse toShipperSettlementListResponse(
             Shipment shipment,
             SettlementViewStatus settlementViewStatus
