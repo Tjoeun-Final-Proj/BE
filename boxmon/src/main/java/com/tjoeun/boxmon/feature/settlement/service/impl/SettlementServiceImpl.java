@@ -1,6 +1,7 @@
 package com.tjoeun.boxmon.feature.settlement.service.impl;
 
 import com.tjoeun.boxmon.exception.ConcurrentRequestExceedException;
+import com.tjoeun.boxmon.exception.ExternalServiceException;
 import com.tjoeun.boxmon.exception.RateLimitExceededException;
 import com.tjoeun.boxmon.feature.payment.repository.PaymentRepository;
 import com.tjoeun.boxmon.feature.settlement.domain.Settlement;
@@ -12,8 +13,10 @@ import com.tjoeun.boxmon.feature.settlement.service.DriverRegisterUseCase;
 import com.tjoeun.boxmon.feature.settlement.service.DriverSettlementUseCase;
 import com.tjoeun.boxmon.feature.settlement.service.SettlementNotifier;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
+import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.feature.user.domain.Driver;
 import com.tjoeun.boxmon.feature.user.domain.User;
+import com.tjoeun.boxmon.feature.user.repository.DriverRepository;
 import com.tjoeun.boxmon.global.toss.client.TossApiClient;
 import com.tjoeun.boxmon.global.util.SystemSettingProvider;
 import jakarta.persistence.EntityManager;
@@ -37,6 +40,8 @@ public class SettlementServiceImpl implements DriverRegisterUseCase, SettlementN
     private final SystemSettingProvider systemSettingProvider;
     private final SettlementRepository settlementRepository;
     private final PaymentRepository paymentRepository;
+    private final DriverRepository driverRepository;
+    private final ShipmentRepository shipmentRepository;
 
     //차주를 셀러로 등록
     @Override
@@ -116,7 +121,22 @@ public class SettlementServiceImpl implements DriverRegisterUseCase, SettlementN
             throw new SettlementConflictException("토스 서버 점검으로 인해 정산이 지연되고 있습니다. 1~2시간 후 다시 시도해주세요.");
         }
         
-        //TODO 결과에 따라 분기
-        //  성공시: TossApiClient의 지급대행 api 호출
+        //지급대행 api 호출
+        Shipment shipment = shipmentRepository.findById(shipmentId).orElseThrow(()->new IllegalArgumentException("대상 운송건을 찾을 수 없습니다."));
+        try {
+            tossApiClient.settleDriver(
+                    String.format("%d", shipmentId),
+                    shipment.getDriver().getTossSellerId(),
+                    shipment.getProfit()
+            );
+        }
+        catch (ExternalServiceException e){
+            settlement.failed();
+            settlementRepository.save(settlement);
+            throw e;
+        }
+
+        settlement.complete();
+        settlementRepository.save(settlement);
     }
 }

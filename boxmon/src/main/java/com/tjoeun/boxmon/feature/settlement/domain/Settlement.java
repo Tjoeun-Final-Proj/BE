@@ -54,4 +54,13 @@ public class Settlement {
         this.settleScheduledAt = settleScheduledAt;
         this.policyVersion = policyVersion;
     }
+    
+    public void complete() {
+        settlementStatus = SettlementStatus.PAID;
+        settledAt = LocalDateTime.now();
+    }
+    
+    public void failed(){
+        settlementStatus = SettlementStatus.HOLD;
+    }
 }

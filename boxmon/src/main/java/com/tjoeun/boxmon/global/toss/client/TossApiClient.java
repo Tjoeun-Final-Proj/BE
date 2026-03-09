@@ -12,8 +12,12 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.threeten.bp.LocalDate;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
@@ -208,10 +212,21 @@ public class TossApiClient {
     }
     
     //차주에게 정산(지급대행)
-    public void settleDriver(String shipmentId) {
+    public void settleDriver(String orderId, String sellerId, BigDecimal amount) {
+        String payoutDate = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(LocalDateTime.now().plusDays(1));
+        
         Map<String,Object> requestBody = Map.of(
-                "refPayoutId", shipmentId,
-                
-        )
+                "refPayoutId", orderId,
+                "destination", sellerId,
+                "scheduleType", "SCHEDULED",
+                "payoutDate", payoutDate,
+                "amount", Map.of(
+                        "currency", "KRW",
+                        "value", amount.longValue()
+                ),
+                "transactionDescription", "박스몬정산대금"
+        );
+        
+        Map<String,Object> result = postEncrypted(requestBody,"/v2/payouts", Map.class);
     }
 }
