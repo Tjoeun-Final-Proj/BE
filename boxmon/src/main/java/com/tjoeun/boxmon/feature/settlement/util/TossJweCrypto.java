@@ -20,7 +20,7 @@ public class TossJweCrypto {
     private final byte[] securityKey;
     private final ObjectMapper objectMapper;
 
-    public TossJweCrypto(@Value("${securityKey}") String securityKey, ObjectMapper objectMapper){
+    public TossJweCrypto(@Value("${toss-api-security-key}") String securityKey, ObjectMapper objectMapper){
         //Hex to Bytes
         this.securityKey = HexFormat.of().parseHex(securityKey);
         this.objectMapper = objectMapper;
