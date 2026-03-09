@@ -75,4 +75,5 @@ public class User {
         this.isDelete = isDelete;
     }
 
+
 }

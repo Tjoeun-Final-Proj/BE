@@ -3,6 +3,7 @@ package com.tjoeun.boxmon.feature.user.service;
 import com.tjoeun.boxmon.exception.DuplicateEmailException;
 import com.tjoeun.boxmon.exception.InvalidPasswordException;
 import com.tjoeun.boxmon.exception.UserNotFoundException;
+import com.tjoeun.boxmon.feature.settlement.service.DriverRegisterUseCase;
 import com.tjoeun.boxmon.feature.user.domain.*;
 import com.tjoeun.boxmon.feature.user.dto.*;
 import com.tjoeun.boxmon.feature.user.repository.DriverRepository;
@@ -30,6 +31,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final VehicleRepository vehicleRepository;
+    private final DriverRegisterUseCase driverRegisterUsecase;
 
 
     //화주 회원가입
@@ -122,12 +124,16 @@ public class UserService {
 
     //차주 입금 계좌 정보 입력 및 수정
     public void Account(Long userId, AccountDto request) {
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
-        user.setName(request.getBankCode());
-        user.setPhone(request.getAccountNumber());
-        user.setBusinessNumber(request.getHolderName());
-        userRepository.save(user);
+        Driver driver = driverRepository.findByUser_UserId(userId)
+                .orElseThrow(()-> new UserNotFoundException("차주 없음"));;
+        driver.setBankCode(request.getBankCode());
+        driver.setAccountNumber(request.getAccountNumber());
+        driver.setHolderName(request.getHolderName());
+
+        String tossSellerId = driverRegisterUsecase.registerDriver(driver);
+        driver.setTossSellerId(tossSellerId);
+
+        driverRepository.save(driver);
     }
 
     // 사용자 정보 조회
@@ -177,7 +183,7 @@ public class UserService {
 
     public DriverDetail getDriverDetail(Long userId) {
         User user = userRepository.findByUserId(userId).orElseThrow(() -> new UserNotFoundException("사용자 없음"));
-        Driver driver = driverRepository.findByUser_UserId(userId);
+        Driver driver = driverRepository.findByUser_UserId(userId).orElseThrow(() -> new UserNotFoundException("사용자 없음"));
         Vehicle vehicle = vehicleRepository.findByDriver_User_UserId(userId);
 
         return new DriverDetail(

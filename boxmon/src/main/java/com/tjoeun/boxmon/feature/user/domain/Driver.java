@@ -2,9 +2,11 @@ package com.tjoeun.boxmon.feature.user.domain;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Getter
+@Setter
 public class Driver {
 
     @Id
@@ -33,4 +35,5 @@ public class Driver {
     public Driver(User user) {
         this.user = user;
     }
+
 }
