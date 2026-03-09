@@ -126,10 +126,11 @@ public class ShipmentSettlementService {
         List<Shipment> shipments = findShipperSettlementShipments(
                 shipperId, start, end, shipmentStatus, settlementStatus
         );
-
-        return shipments.stream()
+        List<Shipment> filteredShipments = excludeCanceledShipments(shipments);
+        
+        return filteredShipments.stream()
                 .map(shipment -> shipmentMapper.toShipperSettlementListResponse(
-                        shipment, 
+                        shipment,
                         settlementViewStatusResolver.resolve(shipment)
                 ))
                 .collect(Collectors.toList());
@@ -153,8 +154,9 @@ public class ShipmentSettlementService {
         List<Shipment> shipments = findDriverSettlementShipments(
                 driverId, start, end, shipmentStatus
         );
+        List<Shipment> filteredShipments = excludeCanceledShipments(shipments);
 
-        return shipments.stream()
+        return filteredShipments.stream()
                 .map(shipmentMapper::toDriverSettlementListResponse)
                 .collect(Collectors.toList());
     }
@@ -206,5 +208,11 @@ public class ShipmentSettlementService {
                 .findByDriver_DriverIdAndCreatedAtBetweenOrderByCreatedAtDesc(
                         driverId, start, end
                 );
+    }
+
+    private List<Shipment> excludeCanceledShipments(List<Shipment> shipments) {
+        return shipments.stream()
+                .filter(shipment -> shipment.getShipmentStatus() != ShipmentStatus.CANCELED)
+                .collect(Collectors.toList());
     }
 }

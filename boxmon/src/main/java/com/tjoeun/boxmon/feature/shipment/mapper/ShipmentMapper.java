@@ -6,6 +6,7 @@ import com.tjoeun.boxmon.feature.shipment.domain.CargoType;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementListResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementListResponse;
@@ -30,6 +31,8 @@ public interface ShipmentMapper {
     @Mapping(target = "shipperName", source = "shipper.user.name")
     @Mapping(target = "driverId", expression = "java(shipment.getDriver() != null ? shipment.getDriver().getDriverId() : null)")
     @Mapping(target = "driverName", expression = "java(shipment.getDriver() != null ? shipment.getDriver().getUser().getName() : \"미배차\")")
+    @Mapping(target = "shipperCancelToggle", source = "shipperCancelToggle")
+    @Mapping(target = "driverCancelToggle", source = "driverCancelToggle")
     @Mapping(target = "currentDriverPoint", source = "currentLocationPoint", qualifiedByName = "toSpringPoint")
     @Mapping(target = "cargoType", source = "cargoType", qualifiedByName = "toCargoDescription")
     @Mapping(target = "vehicleType", source = "vehicleType", qualifiedByName = "toVehicleDescription")
@@ -74,6 +77,10 @@ public interface ShipmentMapper {
     @Mapping(target = "vehicleType", source = "vehicleType", qualifiedByName = "toVehicleDescription")
     @Mapping(target = "profit", source = "profit", qualifiedByName = "roundMoney")
     UnassignedShipmentResponse toUnassignedShipmentResponse(Shipment shipment);
+
+    @Mapping(target = "vehicleType", source = "vehicleType", qualifiedByName = "toVehicleDescription")
+    @Mapping(target = "price", source = "price", qualifiedByName = "roundMoney")
+    MyUnassignedShipmentResponse toMyUnassignedShipmentResponse(Shipment shipment);
 
     @Mapping(target = "vehicleType", source = "vehicleType", qualifiedByName = "toVehicleDescription")
     @Mapping(target = "shipmentStatus", source = "shipmentStatus", qualifiedByName = "toShipmentStatusDescription")

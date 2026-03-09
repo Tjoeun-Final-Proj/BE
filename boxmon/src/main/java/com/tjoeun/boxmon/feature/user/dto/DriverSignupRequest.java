@@ -37,10 +37,5 @@ public class DriverSignupRequest {
 
     private String businessNumber;
 
-    @NotNull
-    private String certNumber;
-
-    @NotNull
-    private Boolean accountStatus;
 
 }

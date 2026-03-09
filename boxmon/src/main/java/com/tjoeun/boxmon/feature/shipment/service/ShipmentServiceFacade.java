@@ -5,6 +5,7 @@ import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementListResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementSummaryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
@@ -89,7 +90,7 @@ public class ShipmentServiceFacade implements ShipmentService {
     }
 
     @Override
-    public List<UnassignedShipmentResponse> getMyUnassignedShipments(Long shipperId) {
+    public List<MyUnassignedShipmentResponse> getMyUnassignedShipments(Long shipperId) {
         return shipmentQueryService.getMyUnassignedShipments(shipperId);
     }
 

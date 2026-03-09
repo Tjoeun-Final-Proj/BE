@@ -1,21 +1,26 @@
 package com.tjoeun.boxmon.feature.admin.service;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tjoeun.boxmon.exception.DuplicateAdminException;
 import com.tjoeun.boxmon.exception.InvalidPasswordException;
 import com.tjoeun.boxmon.exception.UserNotFoundException;
 
 
 import com.tjoeun.boxmon.feature.admin.domain.Admin;
+import com.tjoeun.boxmon.feature.admin.domain.AdminEventType;
+import com.tjoeun.boxmon.feature.admin.domain.EventLog;
 import com.tjoeun.boxmon.feature.admin.dto.AdminLogin;
 import com.tjoeun.boxmon.feature.admin.dto.AdminRequest;
 import com.tjoeun.boxmon.feature.admin.repository.AdminRepository;
+import com.tjoeun.boxmon.feature.admin.repository.EventLogRepository;
 import com.tjoeun.boxmon.security.jwt.JwtProvider;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -31,9 +36,15 @@ public class AdminService {
     private  final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final EntityManager em;
+    private final EventLogRepository eventLogRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 관리자 계정 생성
-    public void createAdmin(AdminRequest adminRequest) {
+    @Transactional
+    public void createAdmin(Long adminId, AdminRequest adminRequest) {
+        Admin currentAdmin = adminRepository.findByAdminId(adminId)
+                .orElseThrow(() -> new UserNotFoundException("관리자 없음"));
+
         if (adminRepository.existsByLoginId(adminRequest.getLoginId())) {
             throw new DuplicateAdminException("이미 존재하는 관리자 ID");
         }
@@ -41,10 +52,20 @@ public class AdminService {
         Admin admin = new Admin(
                 adminRequest.getLoginId(),
                 encoder.encode(adminRequest.getPassword()),
-                adminRequest.getName()
+                adminRequest.getName(),
+                Boolean.FALSE
         );
 
         adminRepository.save(admin);
+
+        String logMessage = String.format("관리자 %s 계정 생성", adminRequest.getName());
+        JsonNode payload = objectMapper.valueToTree(logMessage);
+
+        eventLogRepository.save(EventLog.builder()
+                .admin(currentAdmin)
+                .eventType(AdminEventType.ADMIN_REGISTERED)
+                .payload(payload)
+                .build());
     }
 
     //로그인
@@ -57,10 +78,10 @@ public class AdminService {
         }
 
         // Access Token 생성 (15분 만료)
-        String accessToken = jwtProvider.createAccessToken(admin.getAdminId());
+        String accessToken = jwtProvider.createAccessToken(admin.getAdminId(), true);
 
         // Refresh Token 생성 (14일 만료)
-        String refreshToken = jwtProvider.createRefreshToken(admin.getAdminId());
+        String refreshToken = jwtProvider.createRefreshToken(admin.getAdminId(), true);
 
         return new AdminLogin(accessToken, refreshToken);
     }
@@ -74,19 +95,44 @@ public class AdminService {
 
     //관리자 목록 조회
     public List<Admin> getAdminList() {
-        List<Admin> admins = adminRepository.findAll();
+        List<Admin> admins = adminRepository.findAllByIsDelete();
         return admins;
     }
 
     //관리자 계정 탈퇴
     @Transactional
-    public void deleteAdmin(Long adminId, String pw){
+    public void deleteAdmin(Long adminId, String pw) {
         Admin admin = adminRepository.findByAdminId(adminId)
-                .orElseThrow();
-        if(!passwordEncoder.matches(pw, admin.getPassword())){
+                .orElseThrow(() -> new UserNotFoundException("관리자 없음"));
+
+        if (!passwordEncoder.matches(pw, admin.getPassword())) {
             throw new InvalidPasswordException("비밀번호 불일치");
         }
-        adminRepository.deleteById(adminId);
+
+        String logMessage = String.format("관리자 %s 탈퇴", admin.getName());
+        JsonNode payload = objectMapper.valueToTree(logMessage);
+
+        eventLogRepository.save(EventLog.builder()
+                .admin(admin)
+                .eventType(AdminEventType.ADMIN_DELETED)
+                .payload(payload)
+                .build());
+
+        if(admin.getIsDelete()){
+            return;
+        }
+
+        // 삭제된 사용자 수를 세어서 다음 번호 결정
+        long deletedCount = adminRepository.countDeletedAdmins();
+        String deletedId = (deletedCount + 1) + "deleteId";
+
+        admin.setPassword("deleteAccount");
+        admin.setIsDelete(true);
+
+        adminRepository.save(admin);
+
         em.flush();
     }
+
+
 }

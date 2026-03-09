@@ -42,8 +42,12 @@ public class ShipmentCancelService {
             UserRoleInShipment role = resolveUserRole(shipment, userId);
             ShipmentStatus status = shipment.getShipmentStatus();
 
-            if (status == ShipmentStatus.DONE || status == ShipmentStatus.CANCELED) {
-                throw new ShipmentStateConflictException("취소할 수 없는 상태입니다.");
+            if (status == ShipmentStatus.CANCELED) {
+                return; // 멱등성 보장: 이미 취소된 상태라면 성공으로 처리
+            }
+
+            if (status == ShipmentStatus.DONE) {
+                throw new ShipmentStateConflictException("이미 완료된 배송은 취소할 수 없습니다.");
             }
 
             if (status == ShipmentStatus.REQUESTED) {
@@ -117,6 +121,31 @@ public class ShipmentCancelService {
         }
     }
 
+    /**
+     * 관리자가 배송을 강제 취소합니다.
+     * DONE 상태는 취소할 수 없고, CANCELED 상태는 멱등 처리합니다.
+     */
+    public void forceCancelByAdmin(Long shipmentId, String reason) {
+        try {
+            Shipment shipment = shipmentRepository.findByShipmentIdForUpdate(shipmentId)
+                    .orElseThrow(() -> new ShipmentNotFoundException("배송을 찾을 수 없습니다."));
+
+            ShipmentStatus status = shipment.getShipmentStatus();
+            if (status == ShipmentStatus.DONE) {
+                throw new ShipmentStateConflictException("완료된 운송건은 강제취소할 수 없습니다.");
+            }
+            if (status == ShipmentStatus.CANCELED) {
+                return;
+            }
+
+            finalizeCancellation(shipment);
+            shipmentRepository.save(shipment);
+            cancelPaymentOnAdminForceCancellation(shipmentId, reason);
+        } catch (PessimisticLockException | PessimisticLockingFailureException e) {
+            throw new ShipmentStateConflictException("동시 요청 충돌로 강제취소를 처리하지 못했습니다. 잠시 후 다시 시도해주세요.");
+        }
+    }
+
     private UserRoleInShipment resolveUserRole(Shipment shipment, Long userId) {
         boolean isShipper = shipment.getShipper() != null && shipment.getShipper().getShipperId().equals(userId);
         boolean isDriver = shipment.getDriver() != null && shipment.getDriver().getDriverId().equals(userId);
@@ -156,6 +185,10 @@ public class ShipmentCancelService {
 
     private void cancelPaymentOnMutualCancellation(Long shipmentId) {
         paymentCancelUseCase.cancelPayment(shipmentId, "화주/차주 상호 취소 승인으로 운송 취소");
+    }
+
+    private void cancelPaymentOnAdminForceCancellation(Long shipmentId, String reason) {
+        paymentCancelUseCase.cancelPayment(shipmentId, reason);
     }
 
     private enum UserRoleInShipment {

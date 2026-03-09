@@ -92,7 +92,7 @@ public interface ShipmentService {
 
     List<UnassignedShipmentResponse> getUnassignedShipments();
 
-    List<UnassignedShipmentResponse> getMyUnassignedShipments(Long shipperId);
+    List<MyUnassignedShipmentResponse> getMyUnassignedShipments(Long shipperId);
 
     List<ShipperInventoryResponse> getMyShipperInventory(Long shipperId);
 

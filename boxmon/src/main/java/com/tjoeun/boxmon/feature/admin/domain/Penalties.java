@@ -20,7 +20,7 @@ public class Penalties {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, name="user_id")
-    private User userId;
+    private User user;
 
     @Column(nullable = false)
     private String payload;
@@ -28,9 +28,9 @@ public class Penalties {
     @Column(nullable = false, name = "created_at")
     private LocalDateTime createdAt;
 
-    public Penalties( Admin adminId, User userId, String payload){
+    public Penalties( Admin adminId, User user, String payload){
         this.adminId = adminId;
-        this.userId = userId;
+        this.user = user;
         this.payload = payload;
         this.createdAt = LocalDateTime.now();
     }

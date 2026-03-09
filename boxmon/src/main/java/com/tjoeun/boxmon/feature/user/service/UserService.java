@@ -3,17 +3,16 @@ package com.tjoeun.boxmon.feature.user.service;
 import com.tjoeun.boxmon.exception.DuplicateEmailException;
 import com.tjoeun.boxmon.exception.InvalidPasswordException;
 import com.tjoeun.boxmon.exception.UserNotFoundException;
-import com.tjoeun.boxmon.feature.user.domain.Driver;
-import com.tjoeun.boxmon.feature.user.domain.Shipper;
-import com.tjoeun.boxmon.feature.user.domain.User;
-import com.tjoeun.boxmon.feature.user.domain.UserType;
+import com.tjoeun.boxmon.feature.user.domain.*;
 import com.tjoeun.boxmon.feature.user.dto.*;
 import com.tjoeun.boxmon.feature.user.repository.DriverRepository;
 import com.tjoeun.boxmon.feature.user.repository.ShipperRepository;
 import com.tjoeun.boxmon.feature.user.repository.UserRepository;
 
+import com.tjoeun.boxmon.feature.user.repository.VehicleRepository;
 import com.tjoeun.boxmon.security.jwt.JwtProvider;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +21,7 @@ import java.util.List;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
@@ -29,14 +29,8 @@ public class UserService {
     private final DriverRepository driverRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    private final VehicleRepository vehicleRepository;
 
-    public UserService(UserRepository userRepository, UserRepository userRepository1, ShipperRepository shipperRepository, DriverRepository driverRepository, PasswordEncoder passwordEncoder, JwtProvider jwtProvider) {
-        this.userRepository = userRepository1;
-        this.shipperRepository = shipperRepository;
-        this.driverRepository = driverRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtProvider = jwtProvider;
-    }
 
     //화주 회원가입
     @Transactional
@@ -86,10 +80,7 @@ public class UserService {
         );
         user = userRepository.save(user);
 
-        Driver driver = new Driver(
-                user,
-                request.getCertNumber()
-                );
+        Driver driver = new Driver(user);
         driverRepository.save(driver);
     }
 
@@ -107,14 +98,14 @@ public class UserService {
         userRepository.save(user);
 
         // Access Token 생성 (15분 만료)
-        String accessToken = jwtProvider.createAccessToken(user.getUserId());
+        String accessToken = jwtProvider.createAccessToken(user.getUserId(), false);
         
         // Refresh Token 생성 (14일 만료)
-        String refreshToken = jwtProvider.createRefreshToken(user.getUserId());
+        String refreshToken = jwtProvider.createRefreshToken(user.getUserId(), false);
 
         UserType userType = user.getUserType();
 
-        return new LoginResponse(accessToken, refreshToken, userType);
+        return new LoginResponse(accessToken, refreshToken, userType, user.getName());
     }
 
     // 회원 정보 수정
@@ -150,7 +141,6 @@ public class UserService {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(()-> new UserNotFoundException("사용자 없음"));
         if(!passwordEncoder.matches(pw, user.getPassword())){
-            log.info("pw: {}, encoded pw: {}, db pw: {}",pw, passwordEncoder.encode(pw),user.getPassword());
             throw new InvalidPasswordException("비밀번호 불일치");
         }
         if(user.getIsDelete()){
@@ -170,7 +160,44 @@ public class UserService {
     }
 
 
+    public ShipperDetail getShipperDetail(Long userId) {
+        User user = userRepository.findByUserId(userId).orElseThrow(()-> new UserNotFoundException("사용자 없음"));
+        ShipperDetail shipperDetail = new ShipperDetail(
+                user.getEmail(),
+                user.getName(),
+                user.getPhone(),
+                user.getCreatedAt(),
+                user.getBirth(),
+                user.getIsPushEnabled(),
+                user.getBusinessNumber(),
+                user.getAccountStatus()
+        );
+                return shipperDetail;
+    }
 
+    public DriverDetail getDriverDetail(Long userId) {
+        User user = userRepository.findByUserId(userId).orElseThrow(() -> new UserNotFoundException("사용자 없음"));
+        Driver driver = driverRepository.findByUser_UserId(userId);
+        Vehicle vehicle = vehicleRepository.findByDriver_User_UserId(userId);
 
+        return new DriverDetail(
+                user.getEmail(),
+                user.getName(),
+                user.getPhone(),
+                user.getCreatedAt(),
+                user.getBirth(),
+                user.getIsPushEnabled(),
+                user.getBusinessNumber(),
+                user.getAccountStatus(),
+                driver != null ? driver.getBankCode() : null,
+                driver != null ? driver.getAccountNumber() : null,
+                driver != null ? driver.getHolderName() : null,
+                vehicle != null ? vehicle.getVehicleNumber() : null,
+                vehicle != null ? vehicle.getVehicleType() : null,
+                vehicle != null ? vehicle.getCanRefrigerate() : false,
+                vehicle != null ? vehicle.getCanFreeze() : false,
+                vehicle != null ? vehicle.getWeightCapacity() : null
+        );
+    }
 
 }

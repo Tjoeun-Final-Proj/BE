@@ -68,6 +68,28 @@ public class ExceptionController {
     public ResponseEntity<String> rateLimitExceededException(RateLimitExceededException e){
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).header("Retry-After",e.getRetryAfter()).body(e.getMessage());
     }
+    @ExceptionHandler(InvalidChatAccessException.class)
+    public ResponseEntity<String> invalidChatAccessException(InvalidChatAccessException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+    }
+
+    @ExceptionHandler(ChatValidationException.class)
+    public ResponseEntity<String> chatValidationException(ChatValidationException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
+    //비밀번호 오류
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ResponseEntity<String> InvalidPasswordException(ChatValidationException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
+    // 문의 테이블 없을때 404(Not Found)로 변환
+    @ExceptionHandler(ContactNotFoundException.class)
+    public ResponseEntity<String> contactNotFoundException(ContactNotFoundException e){
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(Exception e){

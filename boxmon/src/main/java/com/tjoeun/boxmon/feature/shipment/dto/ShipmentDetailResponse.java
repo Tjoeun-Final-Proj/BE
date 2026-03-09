@@ -31,6 +31,8 @@ public class ShipmentDetailResponse {
     private String shipperName; // 화주 이름
     private Long driverId; // 기사 ID
     private String driverName; // 기사 이름
+    private Boolean shipperCancelToggle; // 화주 취소 요청 여부
+    private Boolean driverCancelToggle; // 기사 취소 요청 여부
 
     // 3) 실시간 위치/거리 정보
     private Point currentDriverPoint; // 기사 현재 좌표
@@ -52,6 +54,8 @@ public class ShipmentDetailResponse {
     private String cargoVolume; // 화물 부피
     private Double cargoWeight; // 화물 무게
     private String vehicleType; // 차량 타입
+    private Boolean needRefrigerate; // 냉장 필요 여부
+    private Boolean needFreeze; // 냉동 필요 여부
     private String description; // 특이사항
 
     // 7) 금액 정보

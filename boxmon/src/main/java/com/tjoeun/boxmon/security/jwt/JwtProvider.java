@@ -32,10 +32,11 @@ public class JwtProvider {
         );
     }
 
-    private String createToken(Long userId, String type, long expireTime) {
+    private String createToken(Long userId, String type, long expireTime, boolean isAdmin) {
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))//userId 데이터 전달
                 .claim("type", type)
+                .claim("isAdmin", isAdmin)
                 .setIssuedAt(new Date())//token 발급시간
                 .setExpiration(new Date(System.currentTimeMillis() + expireTime))//token 만료시간
                 .signWith(getSigningKey(),SignatureAlgorithm.HS256)//해시함수 비밀키 ... RS256도 있음
@@ -43,13 +44,13 @@ public class JwtProvider {
     }
 
     //Access Token 생성
-    public String createAccessToken(Long userId){
-        return createToken(userId, "ACCESS", ACCESS_TOKEN_EXPIRE_TIME);
+    public String createAccessToken(Long userId, boolean isAdmin){
+        return createToken(userId, "ACCESS", ACCESS_TOKEN_EXPIRE_TIME, isAdmin);
     }
 
     //Refresh Token 생성
-    public String createRefreshToken(Long userId){
-        return createToken(userId, "REFRESH", REFRESH_TOKEN_EXPIRE_TIME);
+    public String createRefreshToken(Long userId, boolean isAdmin){
+        return createToken(userId, "REFRESH", REFRESH_TOKEN_EXPIRE_TIME, isAdmin);
     }
 
     private Claims parseToken(String token) {
@@ -64,6 +65,11 @@ public class JwtProvider {
     public String getTokenType(String token) {
         Claims claims = parseToken(token);
         return claims.get("type", String.class);
+    }
+
+    public boolean checkAdmin(String token){
+        Claims claims = parseToken(token);
+        return claims.get("isAdmin", Boolean.class);
     }
 
 

@@ -19,4 +19,6 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
             AdminEventType eventType,
             LocalDateTime before
     );
+    List<EventLog> findAllByOrderByCreatedAtDesc();
+
 }

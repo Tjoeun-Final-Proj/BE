@@ -24,7 +24,7 @@ import java.math.RoundingMode;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional
 public class PaymentServiceImpl implements PaymentConfirmUseCase, PaymentCancelUseCase {
     private final TossApiClient tossApiClient;
     private final ShipmentRepository shipmentRepository;

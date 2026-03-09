@@ -75,6 +75,9 @@ dependencies {
     
     //JWE
     implementation("com.nimbusds:nimbus-jose-jwt:9.40")
+
+    //Web Soket
+    implementation ("org.springframework:spring-messaging")
 }
 
 tasks.withType<Test> {
