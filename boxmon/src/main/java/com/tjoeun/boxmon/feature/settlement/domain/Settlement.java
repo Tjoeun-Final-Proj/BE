@@ -25,6 +25,7 @@ public class Settlement {
     
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "shipment_id", nullable = false)
+    @Getter
     private Shipment shipment;
     
     @Getter

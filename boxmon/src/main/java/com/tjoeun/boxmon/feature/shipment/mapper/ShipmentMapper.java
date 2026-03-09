@@ -69,9 +69,13 @@ public interface ShipmentMapper {
             SettlementViewStatus settlementViewStatus
     );
 
-    @Mapping(target = "shipmentStatus", source = "shipmentStatus", qualifiedByName = "toShipmentStatusDescription")
-    @Mapping(target = "profit", source = "profit", qualifiedByName = "roundMoney")
-    DriverSettlementListResponse toDriverSettlementListResponse(Shipment shipment);
+    @Mapping(target = "settlementStatus", source = "settlementViewStatus")
+    @Mapping(target = "shipmentStatus", source = "shipment.shipmentStatus", qualifiedByName = "toShipmentStatusDescription")
+    @Mapping(target = "profit", source = "shipment.profit", qualifiedByName = "roundMoney")
+    DriverSettlementListResponse toDriverSettlementListResponse(
+            Shipment shipment,
+            SettlementViewStatus settlementViewStatus
+    );
 
     @Mapping(target = "vehicleType", source = "vehicleType", qualifiedByName = "toVehicleDescription")
     @Mapping(target = "profit", source = "profit", qualifiedByName = "roundMoney")
