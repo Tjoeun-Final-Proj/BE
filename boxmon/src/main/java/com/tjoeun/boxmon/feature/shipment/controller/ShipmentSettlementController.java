@@ -1,6 +1,6 @@
 package com.tjoeun.boxmon.feature.shipment.controller;
 
-import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
+import com.tjoeun.boxmon.feature.settlement.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementListResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementSummaryResponse;
@@ -73,7 +73,6 @@ public class ShipmentSettlementController {
      * @param year 조회할 연도
      * @param month 조회할 월
      * @param shipmentStatus (선택 사항) 배송 상태 필터
-     * @param settlementStatus (선택 사항) 정산 상태 필터
      * @return 운송 기사 정산 목록과 HTTP 200 OK 응답
      */
     @Operation(summary = "운송 기사 정산 목록 조회", description = "인증된 운송 기사의 정산 목록을 조회합니다.")
@@ -86,12 +85,11 @@ public class ShipmentSettlementController {
             Authentication authentication,
             @Parameter(description = "조회할 연도", example = "2023") @RequestParam(name = "year") int year,
             @Parameter(description = "조회할 월", example = "10") @RequestParam(name = "month") int month,
-            @Parameter(description = "배송 상태 필터 (선택 사항)", example = "DELIVERED") @RequestParam(name = "shipmentStatus", required = false) ShipmentStatus shipmentStatus,
-            @Parameter(description = "정산 상태 필터 (선택 사항)", example = "COMPLETED") @RequestParam(name = "settlementStatus", required = false) SettlementStatus settlementStatus
+            @Parameter(description = "배송 상태 필터 (선택 사항)", example = "DELIVERED") @RequestParam(name = "shipmentStatus", required = false) ShipmentStatus shipmentStatus
     ) {
         Long driverId = Long.valueOf(authentication.getPrincipal().toString());
         List<DriverSettlementListResponse> responses =
-                shipmentService.getDriverSettlementList(driverId, year, month, shipmentStatus, settlementStatus);
+                shipmentService.getDriverSettlementList(driverId, year, month, shipmentStatus);
         return ResponseEntity.ok(responses);
     }
 

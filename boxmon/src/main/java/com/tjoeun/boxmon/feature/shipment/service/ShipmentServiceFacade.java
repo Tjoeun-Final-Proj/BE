@@ -1,6 +1,6 @@
 package com.tjoeun.boxmon.feature.shipment.service;
 
-import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
+import com.tjoeun.boxmon.feature.settlement.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementListResponse;
@@ -132,10 +132,9 @@ public class ShipmentServiceFacade implements ShipmentService {
             Long driverId,
             int year,
             int month,
-            ShipmentStatus shipmentStatus,
-            SettlementStatus settlementStatus
+            ShipmentStatus shipmentStatus
     ) {
         return shipmentSettlementService
-                .getDriverSettlementList(driverId, year, month, shipmentStatus, settlementStatus);
+                .getDriverSettlementList(driverId, year, month, shipmentStatus);
     }
 }

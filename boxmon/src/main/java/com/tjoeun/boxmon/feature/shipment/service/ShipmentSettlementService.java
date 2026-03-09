@@ -3,14 +3,11 @@ package com.tjoeun.boxmon.feature.shipment.service;
 import com.tjoeun.boxmon.exception.RoleAccessDeniedException;
 import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.exception.ShipmentStateConflictException;
-import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
+import com.tjoeun.boxmon.feature.settlement.service.SettlementViewStatusResolver;
+import com.tjoeun.boxmon.feature.settlement.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
-import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementListResponse;
-import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementSummaryResponse;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementListResponse;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementSummaryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.*;
 import com.tjoeun.boxmon.feature.shipment.mapper.ShipmentMapper;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +32,7 @@ public class ShipmentSettlementService {
     private final ShipmentRepository shipmentRepository;
     private final ShipmentDomainSupport support;
     private final ShipmentMapper shipmentMapper;
+    private final SettlementViewStatusResolver settlementViewStatusResolver;
 
     /**
      * 정산 상세 조회: DONE 상태 + 화주/배정차주 본인만 허용.
@@ -129,9 +127,12 @@ public class ShipmentSettlementService {
                 shipperId, start, end, shipmentStatus, settlementStatus
         );
         List<Shipment> filteredShipments = excludeCanceledShipments(shipments);
-
+        
         return filteredShipments.stream()
-                .map(shipmentMapper::toShipperSettlementListResponse)
+                .map(shipment -> shipmentMapper.toShipperSettlementListResponse(
+                        shipment,
+                        settlementViewStatusResolver.resolve(shipment)
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -142,8 +143,7 @@ public class ShipmentSettlementService {
             Long driverId,
             int year,
             int month,
-            ShipmentStatus shipmentStatus,
-            SettlementStatus settlementStatus
+            ShipmentStatus shipmentStatus
     ) {
         support.validateDriverAccess(driverId);
         support.validateYearMonth(year, month);
@@ -152,7 +152,7 @@ public class ShipmentSettlementService {
         LocalDateTime end = start.plusMonths(1).minusNanos(1);
 
         List<Shipment> shipments = findDriverSettlementShipments(
-                driverId, start, end, shipmentStatus, settlementStatus
+                driverId, start, end, shipmentStatus
         );
         List<Shipment> filteredShipments = excludeCanceledShipments(shipments);
 
@@ -196,25 +196,12 @@ public class ShipmentSettlementService {
             Long driverId,
             LocalDateTime start,
             LocalDateTime end,
-            ShipmentStatus shipmentStatus,
-            SettlementStatus settlementStatus
+            ShipmentStatus shipmentStatus
     ) {
-        if (shipmentStatus != null && settlementStatus != null) {
-            return shipmentRepository
-                    .findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusAndSettlementStatusOrderByCreatedAtDesc(
-                            driverId, start, end, shipmentStatus, settlementStatus
-                    );
-        }
         if (shipmentStatus != null) {
             return shipmentRepository
                     .findByDriver_DriverIdAndCreatedAtBetweenAndShipmentStatusOrderByCreatedAtDesc(
                             driverId, start, end, shipmentStatus
-                    );
-        }
-        if (settlementStatus != null) {
-            return shipmentRepository
-                    .findByDriver_DriverIdAndCreatedAtBetweenAndSettlementStatusOrderByCreatedAtDesc(
-                            driverId, start, end, settlementStatus
                     );
         }
         return shipmentRepository

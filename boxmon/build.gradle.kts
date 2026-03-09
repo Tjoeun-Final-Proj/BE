@@ -27,7 +27,6 @@ repositories {
 dependencies {
     //Spring Boot starter
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
-    implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation ("org.springframework.boot:spring-boot-starter-security")
 
@@ -73,6 +72,9 @@ dependencies {
     
     //Firebase Cloud Messaging
     implementation("com.google.firebase:firebase-admin:9.2.0")
+    
+    //JWE
+    implementation("com.nimbusds:nimbus-jose-jwt:9.40")
 
     //Web Soket
     implementation ("org.springframework:spring-messaging")

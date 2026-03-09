@@ -1,6 +1,6 @@
 package com.tjoeun.boxmon.feature.shipment.dto;
 
-import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
+import com.tjoeun.boxmon.feature.settlement.dto.SettlementViewStatus;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 public class DriverSettlementListResponse {
     private Long shipmentId;             // 운송 ID
     private String shipmentStatus;        // 운송 상태(한국어)
-    private SettlementStatus settlementStatus; // 정산 상태
+    private SettlementViewStatus settlementStatus; // 정산 상태
     private LocalDateTime createdAt;      // 운송 생성 일시
     private LocalDateTime pickupDesiredAt; // 픽업 희망 일시
     private LocalDateTime dropoffDesiredAt; // 배차 희망 일시

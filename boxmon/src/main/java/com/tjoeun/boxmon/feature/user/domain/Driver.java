@@ -24,6 +24,9 @@ public class Driver {
 
     @Column(name = "holder_name")
     private String holderName;
+    
+    @Column(name = "toss_seller_id")
+    private String tossSellerId;
 
     protected Driver() {}
 

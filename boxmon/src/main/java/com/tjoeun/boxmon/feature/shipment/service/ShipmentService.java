@@ -1,9 +1,8 @@
 package com.tjoeun.boxmon.feature.shipment.service;
 
-import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
+import com.tjoeun.boxmon.feature.settlement.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.*;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -136,15 +135,13 @@ public interface ShipmentService {
      * @param year 조회할 연도
      * @param month 조회할 월
      * @param shipmentStatus (선택 사항) 배송 상태 필터
-     * @param settlementStatus (선택 사항) 정산 상태 필터
      * @return 운송 기사 정산 목록 응답 DTO 리스트
      */
     List<DriverSettlementListResponse> getDriverSettlementList(
             Long driverId,
             int year,
             int month,
-            ShipmentStatus shipmentStatus,
-            SettlementStatus settlementStatus
+            ShipmentStatus shipmentStatus
     );
 }
 

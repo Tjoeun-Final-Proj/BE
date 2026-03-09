@@ -1,7 +1,6 @@
 package com.tjoeun.boxmon.feature.admin.dto;
 
 import com.tjoeun.boxmon.feature.shipment.domain.CargoType;
-import com.tjoeun.boxmon.feature.shipment.domain.SettlementStatus;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.user.domain.VehicleType;
 import lombok.Builder;
@@ -50,5 +49,4 @@ public class AdminAssignedShipmentDetailResponse {
     private Point waypoint2Point;
     private LocalDateTime createdAt;
     private Point currentLocationPoint;
-    private SettlementStatus settlementStatus;
 }
