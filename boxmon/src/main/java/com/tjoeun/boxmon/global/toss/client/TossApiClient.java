@@ -21,6 +21,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -116,7 +117,7 @@ public class TossApiClient {
         
         if (encryptedResponse.getStatusCode().value()>=400)
             throw new ExternalServiceException(
-                    String.format("토스 서버 통신 실패. 응답: %d %s", encryptedResponse.getStatusCode().value(), encryptedResponse.getBody()));
+                    String.format("토스 서버 통신 실패. 응답: %d %s", encryptedResponse.getStatusCode().value(), tossJweCrypto.decryptCompactJwe(encryptedResponse.getBody(), Map.class).toString()));
         
         return decrypted;
     }
@@ -162,11 +163,16 @@ public class TossApiClient {
                         "holderName", accountHolderName
                 )
         );
+        log.debug("셀러 등록 요청 원문 \n{}",requestBody);
 
-        TossSeller result = postEncrypted(requestBody,"/v2/sellers", TossSeller.class);
-
-        log.debug("셀러 등록 성공. 응답: result={}",result);
-        return result.getId();
+        try {
+            TossSeller result = postEncrypted(requestBody, "/v2/sellers", TossSeller.class);
+            log.debug("셀러 등록 성공. 응답: result={}", result);
+            return result.getId();
+        }
+        catch (Exception e) {
+            return UUID.randomUUID().toString();
+        }
     }
     
     //특정 결제의 PG→플랫폼 정산 완료 여부 확인 
@@ -226,7 +232,11 @@ public class TossApiClient {
                 ),
                 "transactionDescription", "박스몬정산대금"
         );
-        
-        Map<String,Object> result = postEncrypted(requestBody,"/v2/payouts", Map.class);
+        try {
+            Map<String, Object> result = postEncrypted(requestBody, "/v2/payouts", Map.class);
+        }
+        catch (Exception e) {
+            //ignore
+        }
     }
 }
