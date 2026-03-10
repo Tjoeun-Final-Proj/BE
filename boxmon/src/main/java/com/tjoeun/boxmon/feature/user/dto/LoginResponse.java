@@ -10,13 +10,15 @@ public class LoginResponse {
     private String refreshToken;
     private UserType userType;
     private String name;
+    private String email;
 
 
-    public LoginResponse(String accessToken, String refreshToken, UserType userType, String name){
+    public LoginResponse(String accessToken, String refreshToken, UserType userType, String name, String email){
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.userType = userType;
         this.name = name;
+        this.email = email;
 
     }
 
