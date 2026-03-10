@@ -7,6 +7,7 @@ import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperRecentShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.service.ShipmentService;
@@ -289,6 +290,21 @@ public class ShipmentController {
     public ResponseEntity<ShipperTodaySummaryResponse> getMyShipperTodaySummary(Authentication authentication) {
         Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
         ShipperTodaySummaryResponse response = shipmentService.getMyShipperTodaySummary(shipperId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "화주 최근 운송 1건 조회", description = "인증된 화주의 최신 운송 1건을 마지막 업데이트 기준 정보와 함께 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "화주 최근 운송 1건 조회 성공")
+    @ApiResponse(responseCode = "204", description = "조회할 운송 내역 없음")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "화주 권한 필요")
+    @GetMapping("/my/recent/shipper")
+    public ResponseEntity<ShipperRecentShipmentResponse> getMyRecentShipperShipment(Authentication authentication) {
+        Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
+        ShipperRecentShipmentResponse response = shipmentService.getMyRecentShipperShipment(shipperId);
+        if (response == null) {
+            return ResponseEntity.noContent().build();
+        }
         return ResponseEntity.ok(response);
     }
 

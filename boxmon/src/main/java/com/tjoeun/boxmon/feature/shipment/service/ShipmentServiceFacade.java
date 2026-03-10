@@ -10,6 +10,7 @@ import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperRecentShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementListResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementSummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperTodaySummaryResponse;
@@ -114,6 +115,11 @@ public class ShipmentServiceFacade implements ShipmentService {
     @Override
     public ShipperTodaySummaryResponse getMyShipperTodaySummary(Long shipperId) {
         return shipmentQueryService.getMyShipperTodaySummary(shipperId);
+    }
+
+    @Override
+    public ShipperRecentShipmentResponse getMyRecentShipperShipment(Long shipperId) {
+        return shipmentQueryService.getMyRecentShipperShipment(shipperId);
     }
 
     // Settlement 계열 위임

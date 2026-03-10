@@ -8,12 +8,14 @@ import com.tjoeun.boxmon.feature.shipment.dto.DriverTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperRecentShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.mapper.ShipmentMapper;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.global.naver.api.NaverDirectionsApiClient;
 import com.tjoeun.boxmon.global.naver.dto.NaverDirectionsResponse;
+import com.tjoeun.boxmon.global.util.AddressProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,10 +24,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -187,6 +193,73 @@ public class ShipmentQueryService {
                 .inTransitCount(inTransitCount)
                 .doneCount(doneCount)
                 .build();
+    }
+
+    /**
+     * 화주 홈용 최근 운송 1건 정보를 조회합니다.
+     */
+    public ShipperRecentShipmentResponse getMyRecentShipperShipment(Long shipperId) {
+        support.validateShipperAccess(shipperId);
+
+        Optional<Shipment> recentShipment = shipmentRepository.findFirstByShipper_ShipperIdOrderByCreatedAtDesc(shipperId);
+        if (recentShipment.isEmpty()) {
+            return null;
+        }
+
+        Shipment shipment = recentShipment.get();
+        LocalDateTime lastUpdatedAt = resolveLastUpdatedAt(shipment);
+
+        return ShipperRecentShipmentResponse.builder()
+                .shipmentId(shipment.getShipmentId())
+                .routeText(buildRouteText(shipment))
+                .shipmentStatus(shipment.getShipmentStatus() == null ? null : shipment.getShipmentStatus().getDescription())
+                .lastUpdatedAt(lastUpdatedAt)
+                .lastUpdatedLabel(toLastUpdatedLabel(lastUpdatedAt))
+                .build();
+    }
+
+    private LocalDateTime resolveLastUpdatedAt(Shipment shipment) {
+        return Stream.of(
+                        shipment.getCreatedAt(),
+                        shipment.getAcceptedAt(),
+                        shipment.getPickupAt(),
+                        shipment.getDropoffAt()
+                )
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElse(shipment.getCreatedAt());
+    }
+
+    private String buildRouteText(Shipment shipment) {
+        String pickup = AddressProcessor.simplifiy(shipment.getPickupAddress());
+        String dropoff = AddressProcessor.simplifiy(shipment.getDropoffAddress());
+
+        String pickupText = (pickup == null || pickup.isBlank()) ? shipment.getPickupAddress() : pickup;
+        String dropoffText = (dropoff == null || dropoff.isBlank()) ? shipment.getDropoffAddress() : dropoff;
+
+        String safePickupText = (pickupText == null || pickupText.isBlank()) ? "출발지" : pickupText;
+        String safeDropoffText = (dropoffText == null || dropoffText.isBlank()) ? "도착지" : dropoffText;
+        return safePickupText + " → " + safeDropoffText;
+    }
+
+    private String toLastUpdatedLabel(LocalDateTime lastUpdatedAt) {
+        if (lastUpdatedAt == null) {
+            return null;
+        }
+
+        LocalDate today = LocalDate.now(KST);
+        LocalDate updatedDate = lastUpdatedAt.toLocalDate();
+        if (updatedDate.equals(today)) {
+            long minutesAgo = ChronoUnit.MINUTES.between(lastUpdatedAt, LocalDateTime.now(KST));
+            if (minutesAgo < 1) {
+                minutesAgo = 1;
+            }
+            return minutesAgo + "분 전 업데이트";
+        }
+        if (updatedDate.equals(today.minusDays(1))) {
+            return "어제 업데이트";
+        }
+        return lastUpdatedAt.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")) + " 업데이트";
     }
 
     /**
