@@ -5,6 +5,7 @@ import com.nimbusds.jose.crypto.DirectDecrypter;
 import com.nimbusds.jose.crypto.DirectEncrypter;
 import com.tjoeun.boxmon.feature.settlement.exception.JweDecryptException;
 import com.tjoeun.boxmon.feature.settlement.exception.JweEncryptException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -15,6 +16,7 @@ import java.util.HexFormat;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Component
 public class TossJweCrypto {
     private final byte[] securityKey;
@@ -50,6 +52,7 @@ public class TossJweCrypto {
             String json = jwe.getPayload().toString(); // decrypted JSON string
             return objectMapper.readValue(json, responseType);
         } catch (Exception e) {
+            log.error("JWE 복호화 실패. 키 길이: {}, jwe 앞 5글자: {}", compactJwe.length(), compactJwe.substring(0, 5));
             throw new JweDecryptException("JWE 복호화 중 문제가 발생했습니다.",e);
         }
     }

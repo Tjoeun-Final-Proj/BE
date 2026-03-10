@@ -30,6 +30,7 @@ public class ExceptionController {
     @ExceptionHandler(ExternalServiceException.class)
     public ResponseEntity<String> externalServiceException(ExternalServiceException e){
         log.error(e.getMessage());
+        e.printStackTrace();
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("외부 API 연동에 실패했습니다. 잠시 후 다시 시도해주세요.");
     }
 

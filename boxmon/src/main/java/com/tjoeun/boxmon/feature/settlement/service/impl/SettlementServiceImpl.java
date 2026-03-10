@@ -47,7 +47,7 @@ public class SettlementServiceImpl implements DriverRegisterUseCase, SettlementN
     @Override
     public String registerDriver(Driver driver) {
         User user = driver.getUser();
-        String normalizedId = String.format("%7d",driver.getDriverId());
+        String normalizedId = String.format("%07d",driver.getDriverId());
         return tossApiClient.registerDriver(
                 normalizedId,
                 user.getName(),
@@ -101,12 +101,12 @@ public class SettlementServiceImpl implements DriverRegisterUseCase, SettlementN
         //마지막 정산 확인 시간으로부터 1시간 이상 지났는지 검증(정산일이 밀린 경우 중복 확인을 지원하되 빈도 제한을 걸기 위해 사용)
         Settlement settlement = settlementRepository.findByShipment_ShipmentId(shipmentId)
                 .orElseThrow(() -> new IllegalStateException("처리 중이던 정산 상태 데이터가 사라짐"));
-        LocalDateTime nextCheckTime = settlement.getLastCheckAt().plusHours(1L);
-        boolean isRecentlyChecked = LocalDateTime.now().isAfter(nextCheckTime);
+        LocalDateTime lastCheckTime = settlement.getLastCheckAt();
+        boolean isRecentlyChecked = lastCheckTime != null && LocalDateTime.now().isAfter(lastCheckTime.plusHours(1L));
         if(isRecentlyChecked) {
             throw new RateLimitExceededException(
                     "토스 서버 점검으로 인해 정산이 지연되고 있습니다. 1~2시간 후 다시 시도해주세요.",
-                    String.valueOf(Duration.between(nextCheckTime,LocalDateTime.now()).getSeconds())
+                    String.valueOf(Duration.between(lastCheckTime.plusHours(1L),LocalDateTime.now()).getSeconds())
             );
         }
         
