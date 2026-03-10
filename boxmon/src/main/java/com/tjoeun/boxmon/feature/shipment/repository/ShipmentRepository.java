@@ -129,6 +129,22 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
     List<Shipment> findByDriver_DriverIdOrderByCreatedAtDesc(Long driverId);
 
+    long countByDriver_DriverIdAndPickupDesiredAtBetweenAndShipmentStatusIn(
+            Long driverId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            List<ShipmentStatus> shipmentStatuses
+    );
+
+    Optional<Shipment> findFirstByDriver_DriverIdAndPickupDesiredAtBetweenAndShipmentStatusInOrderByPickupDesiredAtAsc(
+            Long driverId,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            List<ShipmentStatus> shipmentStatuses
+    );
+
+    long countByDriver_DriverIdAndShipmentStatus(Long driverId, ShipmentStatus shipmentStatus);
+
     Optional<Shipment> findByShipmentIdAndShipmentStatus(Long shipmentId, ShipmentStatus shipmentStatus);
 
     Optional<Shipment> findByShipmentIdAndShipmentStatusNot(Long shipmentId, ShipmentStatus shipmentStatus);

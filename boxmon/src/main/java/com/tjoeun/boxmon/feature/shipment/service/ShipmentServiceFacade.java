@@ -5,6 +5,7 @@ import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementListResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverSettlementSummaryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.DriverTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
@@ -102,6 +103,11 @@ public class ShipmentServiceFacade implements ShipmentService {
     @Override
     public List<DriverInventoryResponse> getMyDriverInventory(Long driverId) {
         return shipmentQueryService.getMyDriverInventory(driverId);
+    }
+
+    @Override
+    public DriverTodaySummaryResponse getMyDriverTodaySummary(Long driverId) {
+        return shipmentQueryService.getMyDriverTodaySummary(driverId);
     }
 
     // Settlement 계열 위임
