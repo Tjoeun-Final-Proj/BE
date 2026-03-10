@@ -39,13 +39,13 @@ public class ShipmentQueryService {
     private final ShipmentMapper shipmentMapper;
 
     /**
-     * 배차 수락 화면용 상세 조회 (사진 URL 제외).
+     * 배차 수락 화면용 상세 조회 (사진 URL 포함).
      */
     public ShipmentDetailResponse getShipmentAcceptDetail(Long shipmentId) {
         Shipment shipment = shipmentRepository.findById(shipmentId)
                 .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
 
-        return shipmentMapper.toDetailResponse(shipment, false, false);
+        return shipmentMapper.toDetailResponse(shipment, true, true);
     }
 
     /**
@@ -57,7 +57,7 @@ public class ShipmentQueryService {
         Shipment shipment = shipmentRepository.findById(shipmentId)
                 .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
 
-        ShipmentDetailResponse response = shipmentMapper.toDetailResponse(shipment, false, false);
+        ShipmentDetailResponse response = shipmentMapper.toDetailResponse(shipment, true, true);
 
         if (shipment.getDriver() != null && shipment.getCurrentLocationPoint() != null) {
             log.info("차주 배차 및 위치 정보 확인. 현재 위치를 기준으로 남은 경로 ETA 계산을 시작합니다. (Shipment ID: {})", shipmentId);
