@@ -4,6 +4,7 @@ import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.DriverTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
@@ -276,6 +277,17 @@ public class ShipmentController {
     public ResponseEntity<List<DriverInventoryResponse>> getMyDriverInventory(Authentication authentication) {
         Long driverId = Long.valueOf(authentication.getPrincipal().toString());
         List<DriverInventoryResponse> response = shipmentService.getMyDriverInventory(driverId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "차주 홈 오늘 요약 조회", description = "인증된 차주의 오늘 운행 건수, 첫 상차 시간, 현재 운송 중 건수를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "차주 홈 오늘 요약 조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "차주 권한 필요")
+    @GetMapping("/my/summary/driver")
+    public ResponseEntity<DriverTodaySummaryResponse> getMyDriverTodaySummary(Authentication authentication) {
+        Long driverId = Long.valueOf(authentication.getPrincipal().toString());
+        DriverTodaySummaryResponse response = shipmentService.getMyDriverTodaySummary(driverId);
         return ResponseEntity.ok(response);
     }
 }

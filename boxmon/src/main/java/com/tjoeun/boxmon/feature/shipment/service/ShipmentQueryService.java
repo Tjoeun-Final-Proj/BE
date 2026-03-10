@@ -4,6 +4,7 @@ import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.DriverTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
@@ -17,7 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +35,7 @@ import java.util.stream.Collectors;
  * 상세 조회, 미배차 목록 조회, ETA/거리 계산을 처리합니다.
  */
 public class ShipmentQueryService {
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final ShipmentRepository shipmentRepository;
     private final NaverDirectionsApiClient naverDirectionsApiClient;
@@ -119,6 +123,41 @@ public class ShipmentQueryService {
         return shipments.stream()
                 .map(shipmentMapper::toDriverInventoryResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 차주 홈용 오늘 요약 정보를 조회합니다.
+     */
+    public DriverTodaySummaryResponse getMyDriverTodaySummary(Long driverId) {
+        support.validateDriverAccess(driverId);
+
+        LocalDate today = LocalDate.now(KST);
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay().minusNanos(1);
+        List<ShipmentStatus> scheduleStatuses = List.of(ShipmentStatus.ASSIGNED, ShipmentStatus.IN_TRANSIT);
+
+        int todayScheduleCount = Math.toIntExact(
+                shipmentRepository.countByDriver_DriverIdAndPickupDesiredAtBetweenAndShipmentStatusIn(
+                        driverId, startOfDay, endOfDay, scheduleStatuses
+                )
+        );
+
+        LocalDateTime firstPickupDesiredAt = shipmentRepository
+                .findFirstByDriver_DriverIdAndPickupDesiredAtBetweenAndShipmentStatusInOrderByPickupDesiredAtAsc(
+                        driverId, startOfDay, endOfDay, scheduleStatuses
+                )
+                .map(Shipment::getPickupDesiredAt)
+                .orElse(null);
+
+        int inTransitCount = Math.toIntExact(
+                shipmentRepository.countByDriver_DriverIdAndShipmentStatus(driverId, ShipmentStatus.IN_TRANSIT)
+        );
+
+        return DriverTodaySummaryResponse.builder()
+                .todayScheduleCount(todayScheduleCount)
+                .firstPickupDesiredAt(firstPickupDesiredAt)
+                .inTransitCount(inTransitCount)
+                .build();
     }
 
     /**
