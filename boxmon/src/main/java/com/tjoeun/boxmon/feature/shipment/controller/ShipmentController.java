@@ -7,6 +7,7 @@ import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.service.ShipmentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -277,6 +278,17 @@ public class ShipmentController {
     public ResponseEntity<List<DriverInventoryResponse>> getMyDriverInventory(Authentication authentication) {
         Long driverId = Long.valueOf(authentication.getPrincipal().toString());
         List<DriverInventoryResponse> response = shipmentService.getMyDriverInventory(driverId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "화주 홈 요약 조회", description = "인증된 화주의 배차 대기, 배차 완료, 운송 중, 배송 완료 건수를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "화주 홈 요약 조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "화주 권한 필요")
+    @GetMapping("/my/summary/shipper")
+    public ResponseEntity<ShipperTodaySummaryResponse> getMyShipperTodaySummary(Authentication authentication) {
+        Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
+        ShipperTodaySummaryResponse response = shipmentService.getMyShipperTodaySummary(shipperId);
         return ResponseEntity.ok(response);
     }
 

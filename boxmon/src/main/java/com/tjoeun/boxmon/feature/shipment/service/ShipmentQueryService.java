@@ -8,6 +8,7 @@ import com.tjoeun.boxmon.feature.shipment.dto.DriverTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.mapper.ShipmentMapper;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
@@ -157,6 +158,34 @@ public class ShipmentQueryService {
                 .todayScheduleCount(todayScheduleCount)
                 .firstPickupDesiredAt(firstPickupDesiredAt)
                 .inTransitCount(inTransitCount)
+                .build();
+    }
+
+    /**
+     * 화주 홈용 요약 정보를 조회합니다.
+     * 전체 누적 기준으로 상태별 건수를 반환합니다.
+     */
+    public ShipperTodaySummaryResponse getMyShipperTodaySummary(Long shipperId) {
+        support.validateShipperAccess(shipperId);
+
+        int requestedCount = Math.toIntExact(
+                shipmentRepository.countByShipper_ShipperIdAndShipmentStatus(shipperId, ShipmentStatus.REQUESTED)
+        );
+        int assignedCount = Math.toIntExact(
+                shipmentRepository.countByShipper_ShipperIdAndShipmentStatus(shipperId, ShipmentStatus.ASSIGNED)
+        );
+        int inTransitCount = Math.toIntExact(
+                shipmentRepository.countByShipper_ShipperIdAndShipmentStatus(shipperId, ShipmentStatus.IN_TRANSIT)
+        );
+        int doneCount = Math.toIntExact(
+                shipmentRepository.countByShipper_ShipperIdAndShipmentStatus(shipperId, ShipmentStatus.DONE)
+        );
+
+        return ShipperTodaySummaryResponse.builder()
+                .requestedCount(requestedCount)
+                .assignedCount(assignedCount)
+                .inTransitCount(inTransitCount)
+                .doneCount(doneCount)
                 .build();
     }
 
