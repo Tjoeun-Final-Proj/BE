@@ -12,6 +12,7 @@ import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementListResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementSummaryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipperTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.UnassignedShipmentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -108,6 +109,11 @@ public class ShipmentServiceFacade implements ShipmentService {
     @Override
     public DriverTodaySummaryResponse getMyDriverTodaySummary(Long driverId) {
         return shipmentQueryService.getMyDriverTodaySummary(driverId);
+    }
+
+    @Override
+    public ShipperTodaySummaryResponse getMyShipperTodaySummary(Long shipperId) {
+        return shipmentQueryService.getMyShipperTodaySummary(shipperId);
     }
 
     // Settlement 계열 위임

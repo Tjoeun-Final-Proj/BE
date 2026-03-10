@@ -145,6 +145,8 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
     long countByDriver_DriverIdAndShipmentStatus(Long driverId, ShipmentStatus shipmentStatus);
 
+    long countByShipper_ShipperIdAndShipmentStatus(Long shipperId, ShipmentStatus shipmentStatus);
+
     Optional<Shipment> findByShipmentIdAndShipmentStatus(Long shipmentId, ShipmentStatus shipmentStatus);
 
     Optional<Shipment> findByShipmentIdAndShipmentStatusNot(Long shipmentId, ShipmentStatus shipmentStatus);
