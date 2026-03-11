@@ -81,6 +81,8 @@ public interface ShipmentService {
      */
     ShipmentDetailResponse getShipmentAcceptDetail(Long shipmentId);
 
+    ShipmentPriceGuideResponse getShipmentPriceGuide(Long shipperId, ShipmentPriceGuideRequest request);
+
     /**
      * 정산 관리용 완료된 배송 상세 조회
      *
