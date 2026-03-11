@@ -26,8 +26,8 @@ import java.util.UUID;
 @Slf4j
 @Service
 public class NcpObjectStorageService implements ObjectStorageService {
-    // 이미지 업로드 기본 정책: 최대 5MB, jpeg/png/webp만 허용
-    private static final long MAX_UPLOAD_SIZE_BYTES = 5L * 1024 * 1024;
+    // 이미지 업로드 기본 정책: 최대 20MB, jpeg/png/webp만 허용
+    private static final long MAX_UPLOAD_SIZE_BYTES = 20L * 1024 * 1024;
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg",
             "image/png",
@@ -113,7 +113,7 @@ public class NcpObjectStorageService implements ObjectStorageService {
         }
 
         if (file.getSize() > MAX_UPLOAD_SIZE_BYTES) {
-            throw new IllegalArgumentException("이미지 파일 크기는 5MB 이하여야 합니다.");
+            throw new IllegalArgumentException("이미지 파일 크기는 20MB 이하여야 합니다.");
         }
 
         String contentType = file.getContentType();
