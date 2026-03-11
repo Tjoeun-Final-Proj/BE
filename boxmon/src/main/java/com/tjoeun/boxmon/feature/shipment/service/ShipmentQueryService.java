@@ -56,7 +56,9 @@ public class ShipmentQueryService {
         Shipment shipment = shipmentRepository.findById(shipmentId)
                 .orElseThrow(() -> new ShipmentNotFoundException("운송건을 찾을 수 없습니다."));
 
-        return shipmentMapper.toDetailResponse(shipment, true, true);
+        ShipmentDetailResponse response = shipmentMapper.toDetailResponse(shipment, true, true);
+        calculateTotalEtaAndDistance(shipment, response);
+        return response;
     }
 
     /**
