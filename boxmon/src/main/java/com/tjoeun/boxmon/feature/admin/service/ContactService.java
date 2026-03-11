@@ -104,7 +104,8 @@ public class ContactService {
         List<ContactAttatchment> attachments = attatchmentRepository.findByContactId(contact);
 
         List<String> imageUrls = attachments.stream()
-                .map(attachment -> storageService.buildPublicUrl(attachment.getContent()))
+                // 변경 전 코드 : .map(attachment -> storageService.buildPublicUrl(attachment.getContent()))
+                .map(ContactAttatchment::getContent)
                 .toList();
 
         return ContactDetailDto.builder()
