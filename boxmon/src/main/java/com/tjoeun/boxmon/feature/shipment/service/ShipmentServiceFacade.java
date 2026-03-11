@@ -9,6 +9,8 @@ import com.tjoeun.boxmon.feature.shipment.dto.DriverTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentCreateRequest;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentPriceGuideRequest;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentPriceGuideResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperRecentShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperSettlementListResponse;
@@ -80,6 +82,11 @@ public class ShipmentServiceFacade implements ShipmentService {
     @Override
     public ShipmentDetailResponse getShipmentAcceptDetail(Long shipmentId) {
         return shipmentQueryService.getShipmentAcceptDetail(shipmentId);
+    }
+
+    @Override
+    public ShipmentPriceGuideResponse getShipmentPriceGuide(Long shipperId, ShipmentPriceGuideRequest request) {
+        return shipmentQueryService.getShipmentPriceGuide(shipperId, request);
     }
 
     @Override

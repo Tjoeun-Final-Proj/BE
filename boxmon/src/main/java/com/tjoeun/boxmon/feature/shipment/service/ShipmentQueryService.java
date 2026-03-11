@@ -1,5 +1,6 @@
 package com.tjoeun.boxmon.feature.shipment.service;
 
+import com.tjoeun.boxmon.exception.ExternalServiceException;
 import com.tjoeun.boxmon.exception.ShipmentNotFoundException;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
@@ -7,6 +8,8 @@ import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentPriceGuideRequest;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentPriceGuideResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperRecentShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperTodaySummaryResponse;
@@ -18,9 +21,12 @@ import com.tjoeun.boxmon.global.naver.dto.NaverDirectionsResponse;
 import com.tjoeun.boxmon.global.util.AddressProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -43,11 +49,38 @@ import java.util.stream.Stream;
  */
 public class ShipmentQueryService {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final double SHORT_DISTANCE_MAX_KM = 20.0;
+    private static final double MID_DISTANCE_MAX_KM = 50.0;
+    private static final double LONG_DISTANCE_MAX_KM = 100.0;
+    private static final int SHORT_BASE_PRICE = 45000;
+    private static final int MID_BASE_PRICE = 45000;
+    private static final int LONG_BASE_PRICE = 81000;
+    private static final int EXTRA_LONG_BASE_PRICE = 131000;
+    private static final int MID_PRICE_PER_KM = 1200;
+    private static final int LONG_PRICE_PER_KM = 1000;
+    private static final int EXTRA_LONG_PRICE_PER_KM = 850;
 
     private final ShipmentRepository shipmentRepository;
     private final NaverDirectionsApiClient naverDirectionsApiClient;
     private final ShipmentDomainSupport support;
     private final ShipmentMapper shipmentMapper;
+
+    public ShipmentPriceGuideResponse getShipmentPriceGuide(Long shipperId, ShipmentPriceGuideRequest request) {
+        support.validateShipperAccess(shipperId);
+
+        Point pickupPoint = support.convertToJtsPoint(request.getPickupPoint());
+        Point dropoffPoint = support.convertToJtsPoint(request.getDropoffPoint());
+        Point waypoint1Point = support.convertToJtsPoint(request.getWaypoint1Point());
+        Point waypoint2Point = support.convertToJtsPoint(request.getWaypoint2Point());
+
+        Double distanceKm = calculateDistance(pickupPoint, dropoffPoint, waypoint1Point, waypoint2Point)
+                .orElseThrow(() -> new ExternalServiceException("운임 가이드 거리 계산에 실패했습니다."));
+
+        return ShipmentPriceGuideResponse.builder()
+                .estimatedDistanceKm(roundDistance(distanceKm))
+                .recommendedPrice(calculateRecommendedPrice(distanceKm))
+                .build();
+    }
 
     /**
      * 배차 수락 화면용 상세 조회 (사진 URL 포함).
@@ -290,6 +323,61 @@ public class ShipmentQueryService {
                 }
             }
         });
+    }
+
+    private Optional<Double> calculateDistance(Point startPoint, Point goalPoint, Point waypoint1Point, Point waypoint2Point) {
+        if (startPoint == null || goalPoint == null) {
+            throw new IllegalArgumentException("출발지와 도착지 좌표는 필수입니다.");
+        }
+
+        String start = startPoint.getX() + "," + startPoint.getY();
+        String goal = goalPoint.getX() + "," + goalPoint.getY();
+        List<String> waypoints = new ArrayList<>();
+        if (waypoint1Point != null) {
+            waypoints.add(waypoint1Point.getX() + "," + waypoint1Point.getY());
+        }
+        if (waypoint2Point != null) {
+            waypoints.add(waypoint2Point.getX() + "," + waypoint2Point.getY());
+        }
+
+        return naverDirectionsApiClient.getDirections(start, goal, waypoints)
+                .map(this::extractDistanceKm);
+    }
+
+    private Double extractDistanceKm(NaverDirectionsResponse directionsResponse) {
+        if (directionsResponse.getRoute() == null
+                || directionsResponse.getRoute().getTrafast() == null
+                || directionsResponse.getRoute().getTrafast().isEmpty()
+                || directionsResponse.getRoute().getTrafast().get(0).getSummary() == null) {
+            throw new ExternalServiceException("길찾기 응답에 경로 정보가 없습니다.");
+        }
+        return directionsResponse.getRoute().getTrafast().get(0).getSummary().getDistance() / 1000.0;
+    }
+
+    private Double roundDistance(Double distanceKm) {
+        return BigDecimal.valueOf(distanceKm)
+                .setScale(1, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    private Integer calculateRecommendedPrice(Double distanceKm) {
+        BigDecimal distance = BigDecimal.valueOf(distanceKm);
+        BigDecimal recommendedPrice;
+
+        if (distanceKm < SHORT_DISTANCE_MAX_KM) {
+            recommendedPrice = BigDecimal.valueOf(SHORT_BASE_PRICE);
+        } else if (distanceKm < MID_DISTANCE_MAX_KM) {
+            recommendedPrice = BigDecimal.valueOf(MID_BASE_PRICE)
+                    .add(distance.multiply(BigDecimal.valueOf(MID_PRICE_PER_KM)));
+        } else if (distanceKm < LONG_DISTANCE_MAX_KM) {
+            recommendedPrice = BigDecimal.valueOf(LONG_BASE_PRICE)
+                    .add(distance.multiply(BigDecimal.valueOf(LONG_PRICE_PER_KM)));
+        } else {
+            recommendedPrice = BigDecimal.valueOf(EXTRA_LONG_BASE_PRICE)
+                    .add(distance.multiply(BigDecimal.valueOf(EXTRA_LONG_PRICE_PER_KM)));
+        }
+
+        return recommendedPrice.setScale(0, RoundingMode.HALF_UP).intValueExact();
     }
 
     /**

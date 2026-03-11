@@ -1,9 +1,12 @@
 package com.tjoeun.boxmon.feature.shipment.service;
 
+import com.tjoeun.boxmon.exception.ExternalServiceException;
 import com.tjoeun.boxmon.feature.shipment.domain.Shipment;
 import com.tjoeun.boxmon.feature.shipment.domain.ShipmentStatus;
-import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverTodaySummaryResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentPriceGuideRequest;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentPriceGuideResponse;
 import com.tjoeun.boxmon.feature.shipment.mapper.ShipmentMapper;
 import com.tjoeun.boxmon.feature.shipment.repository.ShipmentRepository;
 import com.tjoeun.boxmon.global.naver.api.NaverDirectionsApiClient;
@@ -18,6 +21,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.geo.Point;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -27,6 +31,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -224,6 +229,87 @@ class ShipmentQueryServiceTests {
                 waypointsCaptor.capture());
         assertEquals(List.of("127.5,37.55"), waypointsCaptor.getValue());
         assertTrue(mappedResponse.getEstimatedArrivalTime() != null);
+    }
+
+    @Test
+    @DisplayName("운임 가이드 조회 시 거리와 추천 운임을 반환한다")
+    void getShipmentPriceGuide_returnsDistanceAndRecommendedPrice() {
+        Long shipperId = 21L;
+        ShipmentPriceGuideRequest request = basePriceGuideRequest();
+
+        when(naverDirectionsApiClient.getDirections("127.1,37.5", "128.1,37.6", List.of()))
+                .thenReturn(Optional.of(createDirectionsResponse(35200, 5400000)));
+
+        ShipmentPriceGuideResponse response = shipmentQueryService.getShipmentPriceGuide(shipperId, request);
+
+        assertEquals(35.2, response.getEstimatedDistanceKm(), 0.0001);
+        assertEquals(87240, response.getRecommendedPrice());
+        verify(support).validateShipperAccess(shipperId);
+    }
+
+    @Test
+    @DisplayName("운임 가이드 조회 시 거리 구간 경계에 따라 추천 운임이 달라진다")
+    void getShipmentPriceGuide_appliesTieredPriceTable() {
+        Long shipperId = 22L;
+
+        when(naverDirectionsApiClient.getDirections(any(), any(), anyList()))
+                .thenReturn(Optional.of(createDirectionsResponse(19900, 1)));
+        ShipmentPriceGuideResponse shortResponse = shipmentQueryService.getShipmentPriceGuide(shipperId, basePriceGuideRequest());
+
+        when(naverDirectionsApiClient.getDirections(any(), any(), anyList()))
+                .thenReturn(Optional.of(createDirectionsResponse(50000, 1)));
+        ShipmentPriceGuideResponse longResponse = shipmentQueryService.getShipmentPriceGuide(shipperId, basePriceGuideRequest());
+
+        when(naverDirectionsApiClient.getDirections(any(), any(), anyList()))
+                .thenReturn(Optional.of(createDirectionsResponse(100000, 1)));
+        ShipmentPriceGuideResponse extraLongResponse = shipmentQueryService.getShipmentPriceGuide(shipperId, basePriceGuideRequest());
+
+        assertEquals(45000, shortResponse.getRecommendedPrice());
+        assertEquals(131000, longResponse.getRecommendedPrice());
+        assertEquals(216000, extraLongResponse.getRecommendedPrice());
+    }
+
+    @Test
+    @DisplayName("운임 가이드 조회 시 길찾기 응답이 없으면 예외를 던진다")
+    void getShipmentPriceGuide_throwsWhenDirectionsUnavailable() {
+        Long shipperId = 23L;
+
+        when(naverDirectionsApiClient.getDirections(any(), any(), anyList()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(ExternalServiceException.class,
+                () -> shipmentQueryService.getShipmentPriceGuide(shipperId, basePriceGuideRequest()));
+    }
+
+    @Test
+    @DisplayName("운임 가이드 조회 시 경유지 좌표를 길찾기 API에 전달한다")
+    void getShipmentPriceGuide_passesWaypointsToDirectionsApi() {
+        Long shipperId = 24L;
+        ShipmentPriceGuideRequest request = ShipmentPriceGuideRequest.builder()
+                .pickupPoint(new Point(127.1000, 37.5000))
+                .dropoffPoint(new Point(128.1000, 37.6000))
+                .waypoint1Point(new Point(127.5000, 37.5500))
+                .waypoint2Point(new Point(127.8000, 37.5800))
+                .build();
+        ArgumentCaptor<List<String>> waypointsCaptor = ArgumentCaptor.forClass(List.class);
+
+        when(naverDirectionsApiClient.getDirections(any(), any(), anyList()))
+                .thenReturn(Optional.of(createDirectionsResponse(1000, 600000)));
+
+        shipmentQueryService.getShipmentPriceGuide(shipperId, request);
+
+        verify(naverDirectionsApiClient).getDirections(
+                org.mockito.ArgumentMatchers.eq("127.1,37.5"),
+                org.mockito.ArgumentMatchers.eq("128.1,37.6"),
+                waypointsCaptor.capture());
+        assertEquals(List.of("127.5,37.55", "127.8,37.58"), waypointsCaptor.getValue());
+    }
+
+    private ShipmentPriceGuideRequest basePriceGuideRequest() {
+        return ShipmentPriceGuideRequest.builder()
+                .pickupPoint(new Point(127.1000, 37.5000))
+                .dropoffPoint(new Point(128.1000, 37.6000))
+                .build();
     }
 
     private NaverDirectionsResponse createDirectionsResponse(double distance, int duration) {

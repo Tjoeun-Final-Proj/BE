@@ -6,6 +6,8 @@ import com.tjoeun.boxmon.feature.shipment.dto.ShipmentDetailResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.DriverTodaySummaryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.MyUnassignedShipmentResponse;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentPriceGuideRequest;
+import com.tjoeun.boxmon.feature.shipment.dto.ShipmentPriceGuideResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperInventoryResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperRecentShipmentResponse;
 import com.tjoeun.boxmon.feature.shipment.dto.ShipperTodaySummaryResponse;
@@ -26,6 +28,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -66,6 +69,23 @@ public class ShipmentController {
         Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
         Long shipmentId = shipmentService.createShipment(shipperId, request, cargoPhoto);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ShipmentCreateResponse(shipmentId));
+    }
+
+    @Operation(summary = "거리 기반 운임 가이드 조회", description = "출발지/경유지/도착지 좌표를 기준으로 예상 거리와 추천 운임을 계산합니다.")
+    @ApiResponse(responseCode = "200", description = "운임 가이드 조회 성공",
+            content = @Content(schema = @Schema(implementation = ShipmentPriceGuideResponse.class)))
+    @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
+    @ApiResponse(responseCode = "403", description = "화주 권한 없음")
+    @ApiResponse(responseCode = "503", description = "외부 경로 계산 실패")
+    @PostMapping("/price-guide")
+    public ResponseEntity<ShipmentPriceGuideResponse> getShipmentPriceGuide(
+            Authentication authentication,
+            @Valid @RequestBody ShipmentPriceGuideRequest request
+    ) {
+        Long shipperId = Long.valueOf(authentication.getPrincipal().toString());
+        ShipmentPriceGuideResponse response = shipmentService.getShipmentPriceGuide(shipperId, request);
+        return ResponseEntity.ok(response);
     }
 
     /**
